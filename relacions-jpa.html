@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relacions JPA – r4-demo-school</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #161b22 0%, #1c2333 100%);
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 3rem 2.5rem 2.5rem;
+      margin-bottom: 3rem;
+    }
+    .hero h1 { font-size: 2.4rem; font-weight: 800; color: #f0f6fc; margin-bottom: 1rem; }
+    .hero p  { color: #8b949e; font-size: 1.05rem; max-width: 600px; margin-bottom: 1.5rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .tag {
+      border: 2px solid;
+      border-radius: 999px;
+      padding: .2rem .9rem;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .tag-onetoone    { color: #58a6ff; border-color: #58a6ff; }
+    .tag-onetomany   { color: #3fb950; border-color: #3fb950; }
+    .tag-manytomany  { color: #d29922; border-color: #d29922; }
+    .tag-cascade     { color: #f78166; border-color: #f78166; }
+    .tag-fetch       { color: #bc8cff; border-color: #bc8cff; }
+    .tag-jpa         { color: #39d353; border-color: #39d353; }
+    .tag-springboot  { color: #58a6ff; border-color: #58a6ff; }
+    .tag-jsonignore  { color: #e8bb3f; border-color: #e8bb3f; }
+
+    /* ── Sections ── */
+    section { margin-bottom: 3.5rem; }
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid #21262d;
+      margin-bottom: 1.5rem;
+    }
+    h3 { font-size: 1.2rem; font-weight: 600; color: #58a6ff; margin: 1.8rem 0 .8rem; }
+    h4 { font-size: 1rem; font-weight: 600; color: #d29922; margin: 1.4rem 0 .6rem; }
+    p  { color: #8b949e; margin-bottom: .9rem; }
+    strong { color: #c9d1d9; }
+
+    /* ── Callout ── */
+    .callout {
+      border-left: 3px solid #58a6ff;
+      background: #161b22;
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.2rem;
+      margin: 1.2rem 0;
+    }
+    .callout-title {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #58a6ff;
+      margin-bottom: .4rem;
+    }
+    .callout p { margin: 0; font-size: .92rem; }
+    .callout.warn  { border-color: #d29922; }
+    .callout.warn  .callout-title { color: #d29922; }
+    .callout.green { border-color: #3fb950; }
+    .callout.green .callout-title { color: #3fb950; }
+    .callout.red   { border-color: #f78166; }
+    .callout.red   .callout-title { color: #f78166; }
+
+    /* ── Code blocks ── */
+    .code-wrap { margin: 1rem 0; }
+    .code-header {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: .4rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .code-filename { font-size: .78rem; color: #8b949e; font-family: monospace; }
+    .code-badge {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: .15rem .55rem;
+      border-radius: 4px;
+    }
+    .badge-model      { background: #1f6feb; color: #f0f6fc; }
+    .badge-service    { background: #388bfd22; color: #58a6ff; border: 1px solid #1f6feb; }
+    .badge-mapper     { background: #2ea04326; color: #3fb950; border: 1px solid #2ea043; }
+    .badge-controller { background: #da3633; color: #ffdcd7; }
+    .badge-bd         { background: #6e402022; color: #d29922; border: 1px solid #9e6a03; }
+    pre {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: .83rem;
+      line-height: 1.6;
+    }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    pre code { color: #c9d1d9; }
+
+    /* Syntax colours */
+    .kw  { color: #ff7b72; }   /* keyword: public, private, class, return... */
+    .an  { color: #d2a8ff; }   /* annotation: @Entity, @OneToOne... */
+    .cl  { color: #ffa657; }   /* class name */
+    .str { color: #a5d6ff; }   /* string literal */
+    .cmt { color: #6e7681; font-style: italic; } /* comment */
+    .fn  { color: #d2a8ff; }   /* method/function name */
+    .nm  { color: #79c0ff; }   /* field name */
+    .val { color: #ffa657; }   /* enum value / constant */
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+      margin: 1rem 0;
+    }
+    th {
+      background: #161b22;
+      color: #c9d1d9;
+      font-weight: 600;
+      text-align: left;
+      padding: .6rem 1rem;
+      border-bottom: 2px solid #30363d;
+    }
+    td {
+      padding: .55rem 1rem;
+      border-bottom: 1px solid #21262d;
+      color: #8b949e;
+    }
+    tr:last-child td { border-bottom: none; }
+    td code, th code {
+      background: #21262d;
+      border-radius: 4px;
+      padding: .1rem .35rem;
+      font-size: .8rem;
+      color: #c9d1d9;
+    }
+
+    /* ── Diagram ── */
+    .diagram {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.4rem 1.8rem;
+      font-family: monospace;
+      font-size: .85rem;
+      color: #8b949e;
+      overflow-x: auto;
+      margin: 1rem 0;
+      white-space: pre;
+      line-height: 1.8;
+    }
+    .diagram .hl { color: #58a6ff; }
+    .diagram .gr { color: #3fb950; }
+    .diagram .or { color: #d29922; }
+
+    /* ── Inline code ── */
+    p code, li code, td code {
+      background: #21262d;
+      border-radius: 4px;
+      padding: .1rem .35rem;
+      font-size: .82em;
+      color: #c9d1d9;
+    }
+    ul { padding-left: 1.4rem; }
+    li { color: #8b949e; margin-bottom: .4rem; }
+    li strong { color: #c9d1d9; }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin: 1.2rem 0;
+    }
+    .flow-box {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: .35rem .9rem;
+      font-size: .82rem;
+      color: #c9d1d9;
+      font-family: monospace;
+    }
+    .flow-arrow { color: #58a6ff; font-size: 1.1rem; }
+
+    hr { border: none; border-top: 1px solid #21262d; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <div class="hero">
+    <h1>Relacions JPA</h1>
+    <p>
+      Com mapem les relacions entre entitats a la base de dades —
+      <code>@OneToOne</code>, <code>@OneToMany</code>, <code>@ManyToMany</code> —
+      i com controlem el comportament amb <code>cascade</code>, <code>fetch</code>,
+      <code>mappedBy</code> i <code>@JoinColumn</code>.
+    </p>
+    <div class="tags">
+      <span class="tag tag-onetoone">OneToOne</span>
+      <span class="tag tag-onetomany">OneToMany</span>
+      <span class="tag tag-manytomany">ManyToMany</span>
+      <span class="tag tag-cascade">Cascade</span>
+      <span class="tag tag-fetch">Fetch</span>
+      <span class="tag tag-jpa">JPA</span>
+      <span class="tag tag-springboot">Spring Boot</span>
+      <span class="tag tag-jsonignore">@JsonIgnore</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ 1. MODEL ═══════════════════ -->
+  <section>
+    <h2>1. El model del projecte</h2>
+    <p>El projecte gestiona una escola amb quatre entitats relacionades entre elles:</p>
+
+    <div class="diagram"><span class="hl">Student</span> ──────────────── <span class="gr">AcademicRecord</span>   <span class="or">@OneToOne (bidireccional)</span>
+   │
+   ├─────────────── <span class="gr">Absence</span> (*)        <span class="or">@OneToMany / @ManyToOne</span>
+   │
+   └─────────────── <span class="gr">Course</span>  (*)        <span class="or">@ManyToMany</span>
+                       └──────── <span class="hl">Student</span> (*)   <span class="or">(taula pont)</span></div>
+
+    <p>
+      Cada relació té un <strong>costat propietari</strong> (qui guarda la clau forana a la BD)
+      i un <strong>costat invers</strong> (qui usa <code>mappedBy</code>).
+      Entendre aquesta distinció és clau per saber quines columnes es creen a la base de dades.
+    </p>
+
+    <h3>Codi complet de les entitats</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="str">"students"</span>)
+<span class="kw">public class</span> <span class="cl">Student</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = <span class="cl">GenerationType</span>.<span class="val">IDENTITY</span>)
+    <span class="kw">private</span> <span class="cl">Long</span> <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">firstName</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">lastName</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">email</span>;
+
+    <span class="cmt">// Costat INVERS de la relació OneToOne</span>
+    <span class="an">@OneToOne</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>, fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+    <span class="kw">private</span> <span class="cl">AcademicRecord</span> <span class="nm">academicRecord</span>;
+
+    <span class="cmt">// Costat INVERS de la relació OneToMany</span>
+    <span class="an">@OneToMany</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>)
+    <span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="nm">absences</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();
+
+    <span class="cmt">// Costat PROPIETARI de la relació ManyToMany</span>
+    <span class="an">@ManyToMany</span>
+    <span class="an">@JoinTable</span>(
+        name = <span class="str">"student_course_rel"</span>,
+        joinColumns        = <span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>),
+        inverseJoinColumns = <span class="an">@JoinColumn</span>(name = <span class="str">"course_id"</span>)
+    )
+    <span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Course</span>&gt; <span class="nm">courses</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();
+
+    <span class="cmt">// Constructors</span>
+    <span class="kw">public</span> <span class="fn">Student</span>() {}
+    <span class="kw">public</span> <span class="fn">Student</span>(<span class="cl">String</span> firstName, <span class="cl">String</span> lastName, <span class="cl">String</span> email) {
+        <span class="kw">this</span>.<span class="nm">firstName</span> = firstName;
+        <span class="kw">this</span>.<span class="nm">lastName</span>  = lastName;
+        <span class="kw">this</span>.<span class="nm">email</span>     = email;
+    }
+
+    <span class="cmt">// Getters i Setters</span>
+    <span class="kw">public</span> <span class="cl">Long</span>   <span class="fn">getId</span>()                    { <span class="kw">return</span> <span class="nm">id</span>; }
+    <span class="kw">public void</span>   <span class="fn">setId</span>(<span class="cl">Long</span> id)               { <span class="kw">this</span>.<span class="nm">id</span> = id; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getFirstName</span>()               { <span class="kw">return</span> <span class="nm">firstName</span>; }
+    <span class="kw">public void</span>   <span class="fn">setFirstName</span>(<span class="cl">String</span> firstName) { <span class="kw">this</span>.<span class="nm">firstName</span> = firstName; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getLastName</span>()                { <span class="kw">return</span> <span class="nm">lastName</span>; }
+    <span class="kw">public void</span>   <span class="fn">setLastName</span>(<span class="cl">String</span> lastName)  { <span class="kw">this</span>.<span class="nm">lastName</span> = lastName; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getEmail</span>()                   { <span class="kw">return</span> <span class="nm">email</span>; }
+    <span class="kw">public void</span>   <span class="fn">setEmail</span>(<span class="cl">String</span> email)        { <span class="kw">this</span>.<span class="nm">email</span> = email; }
+
+    <span class="kw">public</span> <span class="cl">AcademicRecord</span> <span class="fn">getAcademicRecord</span>() { <span class="kw">return</span> <span class="nm">academicRecord</span>; }
+    <span class="cmt">// Setter especial: manté els dos costats sincronitzats</span>
+    <span class="kw">public void</span> <span class="fn">setAcademicRecord</span>(<span class="cl">AcademicRecord</span> academicRecord) {
+        <span class="kw">this</span>.<span class="nm">academicRecord</span> = academicRecord;
+        <span class="kw">if</span> (academicRecord != <span class="kw">null</span>) {
+            academicRecord.<span class="fn">setStudent</span>(<span class="kw">this</span>);
+        }
+    }
+
+    <span class="kw">public</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="fn">getAbsences</span>()                   { <span class="kw">return</span> <span class="nm">absences</span>; }
+    <span class="kw">public void</span>            <span class="fn">setAbsences</span>(<span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; absences) { <span class="kw">this</span>.<span class="nm">absences</span> = absences; }
+
+    <span class="kw">public</span> <span class="cl">List</span>&lt;<span class="cl">Course</span>&gt; <span class="fn">getCourses</span>()                  { <span class="kw">return</span> <span class="nm">courses</span>; }
+    <span class="kw">public void</span>           <span class="fn">setCourses</span>(<span class="cl">List</span>&lt;<span class="cl">Course</span>&gt; courses) { <span class="kw">this</span>.<span class="nm">courses</span> = courses; }
+
+    <span class="cmt">// Mètodes helper per a la relació OneToMany</span>
+    <span class="kw">public void</span> <span class="fn">addAbsence</span>(<span class="cl">Absence</span> absence) {
+        <span class="nm">absences</span>.<span class="fn">add</span>(absence);
+        absence.<span class="fn">setStudent</span>(<span class="kw">this</span>);
+    }
+    <span class="kw">public void</span> <span class="fn">removeAbsence</span>(<span class="cl">Absence</span> absence) {
+        <span class="nm">absences</span>.<span class="fn">remove</span>(absence);
+        absence.<span class="fn">setStudent</span>(<span class="kw">null</span>);
+    }
+}</code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/AcademicRecord.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="str">"records"</span>)
+<span class="kw">public class</span> <span class="cl">AcademicRecord</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = <span class="cl">GenerationType</span>.<span class="val">IDENTITY</span>)
+    <span class="kw">private</span> <span class="cl">Long</span> <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">recordNumber</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">status</span>;
+
+    <span class="cmt">// Costat PROPIETARI de la relació OneToOne → genera columna student_id</span>
+    <span class="an">@OneToOne</span>(fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+    <span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>, unique = <span class="kw">true</span>)
+    <span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;
+
+    <span class="cmt">// Constructors</span>
+    <span class="kw">public</span> <span class="fn">AcademicRecord</span>() {}
+    <span class="kw">public</span> <span class="fn">AcademicRecord</span>(<span class="cl">String</span> recordNumber, <span class="cl">String</span> status) {
+        <span class="kw">this</span>.<span class="nm">recordNumber</span> = recordNumber;
+        <span class="kw">this</span>.<span class="nm">status</span>       = status;
+    }
+
+    <span class="cmt">// Getters i Setters</span>
+    <span class="kw">public</span> <span class="cl">Long</span>    <span class="fn">getId</span>()                          { <span class="kw">return</span> <span class="nm">id</span>; }
+    <span class="kw">public void</span>    <span class="fn">setId</span>(<span class="cl">Long</span> id)                   { <span class="kw">this</span>.<span class="nm">id</span> = id; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getRecordNumber</span>()                 { <span class="kw">return</span> <span class="nm">recordNumber</span>; }
+    <span class="kw">public void</span>   <span class="fn">setRecordNumber</span>(<span class="cl">String</span> recordNumber) { <span class="kw">this</span>.<span class="nm">recordNumber</span> = recordNumber; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getStatus</span>()                       { <span class="kw">return</span> <span class="nm">status</span>; }
+    <span class="kw">public void</span>   <span class="fn">setStatus</span>(<span class="cl">String</span> status)          { <span class="kw">this</span>.<span class="nm">status</span> = status; }
+
+    <span class="kw">public</span> <span class="cl">Student</span> <span class="fn">getStudent</span>()                     { <span class="kw">return</span> <span class="nm">student</span>; }
+    <span class="kw">public void</span>    <span class="fn">setStudent</span>(<span class="cl">Student</span> student)      { <span class="kw">this</span>.<span class="nm">student</span> = student; }
+}</code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Absence.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="str">"abcences"</span>)
+<span class="kw">public class</span> <span class="cl">Absence</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = <span class="cl">GenerationType</span>.<span class="val">IDENTITY</span>)
+    <span class="kw">private</span> <span class="cl">Long</span> <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">LocalDate</span> <span class="nm">date</span>;
+    <span class="kw">private boolean</span> <span class="nm">justified</span>;
+
+    <span class="cmt">// Costat PROPIETARI de la relació ManyToOne → genera columna student_id</span>
+    <span class="an">@ManyToOne</span>
+    <span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>)
+    <span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;
+
+    <span class="cmt">// Constructors</span>
+    <span class="kw">public</span> <span class="fn">Absence</span>() {}
+    <span class="kw">public</span> <span class="fn">Absence</span>(<span class="cl">LocalDate</span> date, <span class="kw">boolean</span> justified) {
+        <span class="kw">this</span>.<span class="nm">date</span>      = date;
+        <span class="kw">this</span>.<span class="nm">justified</span> = justified;
+    }
+
+    <span class="cmt">// Getters i Setters</span>
+    <span class="kw">public</span> <span class="cl">Long</span>      <span class="fn">getId</span>()                       { <span class="kw">return</span> <span class="nm">id</span>; }
+    <span class="kw">public void</span>      <span class="fn">setId</span>(<span class="cl">Long</span> id)                { <span class="kw">this</span>.<span class="nm">id</span> = id; }
+
+    <span class="kw">public</span> <span class="cl">LocalDate</span> <span class="fn">getDate</span>()                     { <span class="kw">return</span> <span class="nm">date</span>; }
+    <span class="kw">public void</span>      <span class="fn">setDate</span>(<span class="cl">LocalDate</span> date)       { <span class="kw">this</span>.<span class="nm">date</span> = date; }
+
+    <span class="kw">public boolean</span>   <span class="fn">isJustified</span>()                 { <span class="kw">return</span> <span class="nm">justified</span>; }
+    <span class="kw">public void</span>      <span class="fn">setJustified</span>(<span class="kw">boolean</span> justified) { <span class="kw">this</span>.<span class="nm">justified</span> = justified; }
+
+    <span class="kw">public</span> <span class="cl">Student</span>   <span class="fn">getStudent</span>()                  { <span class="kw">return</span> <span class="nm">student</span>; }
+    <span class="kw">public void</span>      <span class="fn">setStudent</span>(<span class="cl">Student</span> student)   { <span class="kw">this</span>.<span class="nm">student</span> = student; }
+}</code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Course.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="cl">Course</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = <span class="cl">GenerationType</span>.<span class="val">IDENTITY</span>)
+    <span class="kw">private</span> <span class="cl">Long</span> <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">name</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">level</span>;
+
+    <span class="cmt">// Costat INVERS de la relació ManyToMany</span>
+    <span class="an">@ManyToMany</span>(mappedBy = <span class="str">"courses"</span>)
+    <span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Student</span>&gt; <span class="nm">students</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();
+
+    <span class="cmt">// Constructors</span>
+    <span class="kw">public</span> <span class="fn">Course</span>() {}
+    <span class="kw">public</span> <span class="fn">Course</span>(<span class="cl">String</span> name, <span class="cl">String</span> level) {
+        <span class="kw">this</span>.<span class="nm">name</span>  = name;
+        <span class="kw">this</span>.<span class="nm">level</span> = level;
+    }
+
+    <span class="cmt">// Getters i Setters</span>
+    <span class="kw">public</span> <span class="cl">Long</span>   <span class="fn">getId</span>()                          { <span class="kw">return</span> <span class="nm">id</span>; }
+    <span class="kw">public void</span>   <span class="fn">setId</span>(<span class="cl">Long</span> id)                   { <span class="kw">this</span>.<span class="nm">id</span> = id; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getName</span>()                         { <span class="kw">return</span> <span class="nm">name</span>; }
+    <span class="kw">public void</span>   <span class="fn">setName</span>(<span class="cl">String</span> name)             { <span class="kw">this</span>.<span class="nm">name</span> = name; }
+
+    <span class="kw">public</span> <span class="cl">String</span> <span class="fn">getLevel</span>()                        { <span class="kw">return</span> <span class="nm">level</span>; }
+    <span class="kw">public void</span>   <span class="fn">setLevel</span>(<span class="cl">String</span> level)           { <span class="kw">this</span>.<span class="nm">level</span> = level; }
+
+    <span class="kw">public</span> <span class="cl">List</span>&lt;<span class="cl">Student</span>&gt; <span class="fn">getStudents</span>()                    { <span class="kw">return</span> <span class="nm">students</span>; }
+    <span class="kw">public void</span>           <span class="fn">setStudents</span>(<span class="cl">List</span>&lt;<span class="cl">Student</span>&gt; students) { <span class="kw">this</span>.<span class="nm">students</span> = students; }
+}</code></pre>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════ 2. PROPIETARI vs INVERS ═══════════════════ -->
+  <section>
+    <h2>2. Propietari vs costat invers</h2>
+    <p>
+      En tota relació bidireccional JPA hi ha exactament <strong>un costat propietari</strong>
+      i un <strong>costat invers</strong>.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Característica</th>
+          <th>Costat propietari</th>
+          <th>Costat invers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Anotació</td>
+          <td><code>@JoinColumn</code> o <code>@JoinTable</code></td>
+          <td><code>mappedBy = "..."</code></td>
+        </tr>
+        <tr>
+          <td>Crea columna a la BD?</td>
+          <td>Sí</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>JPA escolta canvis?</td>
+          <td>Sí</td>
+          <td>No (només lectura)</td>
+        </tr>
+        <tr>
+          <td>Exemple al projecte</td>
+          <td><code>AcademicRecord.student</code>, <code>Absence.student</code></td>
+          <td><code>Student.academicRecord</code>, <code>Student.absences</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-title">Important</div>
+      <p>
+        <code>mappedBy</code> li diu a JPA: <em>"jo no gestiono aquesta relació, el camp
+        indicat de l'altra classe ja ho fa"</em>. Si oblides <code>mappedBy</code> al costat
+        invers, JPA crearà una columna extra innecessària a la BD.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 3. @OneToOne ═══════════════════ -->
+  <section>
+    <h2>3. @OneToOne — Student ↔ AcademicRecord</h2>
+    <p>
+      Un estudiant té <strong>exactament un</strong> expedient acadèmic, i un expedient
+      pertany a <strong>exactament un</strong> estudiant.
+    </p>
+
+    <h3>Costat propietari — AcademicRecord</h3>
+    <p>
+      <code>AcademicRecord</code> és el propietari perquè té <code>@JoinColumn</code>.
+      Això significa que la taula <code>records</code> tindrà una columna <code>student_id</code>.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/AcademicRecord.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@OneToOne</span>(fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>, unique = <span class="kw">true</span>)
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;</code></pre>
+    </div>
+
+    <ul>
+      <li><code>@JoinColumn(name = "student_id")</code> → crea la columna <code>student_id</code> a la taula <code>records</code>.</li>
+      <li><code>unique = true</code> → garanteix que dos expedients no apuntin al mateix estudiant.</li>
+      <li><code>fetch = FetchType.LAZY</code> → no carrega l'estudiant fins que es cridi <code>getStudent()</code>.</li>
+    </ul>
+
+    <h3>Costat invers — Student</h3>
+    <p>
+      <code>Student</code> és el costat invers: usa <code>mappedBy</code> i no crea cap columna nova.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@OneToOne</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>, fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+<span class="kw">private</span> <span class="cl">AcademicRecord</span> <span class="nm">academicRecord</span>;</code></pre>
+    </div>
+
+    <ul>
+      <li><code>mappedBy = "student"</code> → indica que la relació ja està mapada pel camp <code>student</code> de <code>AcademicRecord</code>.</li>
+      <li><code>cascade = CascadeType.ALL</code> → si esborres o guardes un <code>Student</code>, l'operació es propaga a l'<code>AcademicRecord</code>.</li>
+    </ul>
+
+    <h3>Mètode helper — manteniment de consistència</h3>
+    <p>
+      Amb relacions bidireccionals cal actualitzar <strong>els dos costats</strong> manualment.
+      El setter de <code>Student</code> ho fa automàticament:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java — setAcademicRecord</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="kw">public void</span> <span class="fn">setAcademicRecord</span>(<span class="cl">AcademicRecord</span> academicRecord) {
+    <span class="kw">this</span>.<span class="nm">academicRecord</span> = academicRecord;
+    <span class="kw">if</span> (academicRecord != <span class="kw">null</span>) {
+        academicRecord.<span class="fn">setStudent</span>(<span class="kw">this</span>); <span class="cmt">// actualitza el costat propietari</span>
+    }
+}</code></pre>
+    </div>
+
+    <h3>Taules resultants a la BD</h3>
+    <div class="diagram"><span class="or">students</span>                  <span class="or">records</span>
+──────────────────        ──────────────────────────────
+id (PK)                   id (PK)
+first_name                record_number
+last_name                 status
+email                     <span class="hl">student_id (FK → students.id, UNIQUE)</span></div>
+  </section>
+
+  <!-- ═══════════════════ 4. @OneToMany / @ManyToOne ═══════════════════ -->
+  <section>
+    <h2>4. @OneToMany / @ManyToOne — Student ↔ Absence</h2>
+    <p>
+      Un estudiant pot tenir <strong>moltes</strong> absències, però cada absència
+      pertany a <strong>un sol</strong> estudiant.
+    </p>
+
+    <h3>Costat propietari — Absence (@ManyToOne)</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Absence.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@ManyToOne</span>
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>)
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;</code></pre>
+    </div>
+
+    <ul>
+      <li>El costat <code>@ManyToOne</code> és <strong>sempre</strong> el propietari.</li>
+      <li><code>@JoinColumn(name = "student_id")</code> → crea la columna <code>student_id</code> a la taula <code>abcences</code>.</li>
+    </ul>
+
+    <h3>Costat invers — Student (@OneToMany)</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@OneToMany</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>)
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="nm">absences</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();</code></pre>
+    </div>
+
+    <h3>Mètodes helper</h3>
+    <p>
+      Com que JPA només escolta canvis al costat propietari (<code>Absence</code>),
+      els mètodes helper s'asseguren que els dos costats estiguin sincronitzats:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java — addAbsence / removeAbsence</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="kw">public void</span> <span class="fn">addAbsence</span>(<span class="cl">Absence</span> absence) {
+    <span class="nm">absences</span>.<span class="fn">add</span>(absence);        <span class="cmt">// actualitza el costat Student (invers)</span>
+    absence.<span class="fn">setStudent</span>(<span class="kw">this</span>);   <span class="cmt">// actualitza el costat Absence (propietari)</span>
+}
+
+<span class="kw">public void</span> <span class="fn">removeAbsence</span>(<span class="cl">Absence</span> absence) {
+    <span class="nm">absences</span>.<span class="fn">remove</span>(absence);
+    absence.<span class="fn">setStudent</span>(<span class="kw">null</span>);
+}</code></pre>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">Compte</div>
+      <p>
+        Si afegeixes una <code>Absence</code> només a la llista de <code>Student</code> però
+        no asignes <code>absence.setStudent(this)</code>, JPA <strong>no guardarà</strong>
+        la clau forana correctament perquè el propietari és <code>Absence</code>.
+      </p>
+    </div>
+
+    <h3>Taules resultants a la BD</h3>
+    <div class="diagram"><span class="or">students</span>              <span class="or">abcences</span>
+──────────────        ─────────────────────────────
+id (PK)               id (PK)
+first_name            date
+last_name             justified
+email                 <span class="hl">student_id (FK → students.id)</span></div>
+  </section>
+
+  <!-- ═══════════════════ 5. @ManyToMany ═══════════════════ -->
+  <section>
+    <h2>5. @ManyToMany — Student ↔ Course</h2>
+    <p>
+      Un estudiant pot estar matriculat a <strong>molts</strong> cursos,
+      i un curs pot tenir <strong>molts</strong> estudiants.
+      JPA necessita una <strong>taula pont</strong> per representar-ho.
+    </p>
+
+    <h3>Costat propietari — Student</h3>
+    <p>
+      El costat propietari és qui declara <code>@JoinTable</code>, que configura
+      el nom i les columnes de la taula pont.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@ManyToMany</span>
+<span class="an">@JoinTable</span>(
+    name = <span class="str">"student_course_rel"</span>,          <span class="cmt">// nom de la taula pont</span>
+    joinColumns        = <span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>),  <span class="cmt">// columna del propietari</span>
+    inverseJoinColumns = <span class="an">@JoinColumn</span>(name = <span class="str">"course_id"</span>)    <span class="cmt">// columna de l'altre costat</span>
+)
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Course</span>&gt; <span class="nm">courses</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();</code></pre>
+    </div>
+
+    <h3>Costat invers — Course</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Course.java</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@ManyToMany</span>(mappedBy = <span class="str">"courses"</span>)
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Student</span>&gt; <span class="nm">students</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();</code></pre>
+    </div>
+
+    <h3>Taules resultants a la BD</h3>
+    <div class="diagram"><span class="or">students</span>         <span class="or">student_course_rel</span>       <span class="or">course</span>
+──────────        ───────────────────────   ──────────────
+id (PK)    &lt;───  <span class="hl">student_id (FK)</span>           id (PK)
+...               <span class="hl">course_id  (FK)</span>  ───&gt;   name
+                                           level</div>
+
+    <div class="callout">
+      <div class="callout-title">@JoinTable — paràmetres</div>
+      <p>
+        <code>name</code> → nom de la taula pont.<br/>
+        <code>joinColumns</code> → columna que apunta a l'entitat propietària.<br/>
+        <code>inverseJoinColumns</code> → columna que apunta a l'altra entitat.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6. CASCADE ═══════════════════ -->
+  <section>
+    <h2>6. CascadeType — propagació d'operacions</h2>
+    <p>
+      <code>cascade</code> defineix si les operacions sobre l'entitat <strong>pare</strong>
+      es propaguen automàticament als <strong>fills</strong>.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Tipus</th><th>Efecte</th><th>Quan usar-lo</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>ALL</code></td>
+          <td>Propaga totes les operacions (persist, merge, remove, refresh, detach)</td>
+          <td>Quan el fill no pot existir sense el pare</td>
+        </tr>
+        <tr>
+          <td><code>PERSIST</code></td>
+          <td>Guarda els fills quan guardes el pare</td>
+          <td>Creació en cascada sense voler esborrar en cascada</td>
+        </tr>
+        <tr>
+          <td><code>REMOVE</code></td>
+          <td>Esborra els fills quan esborres el pare</td>
+          <td>Eliminació en cascada d'entitats dependents</td>
+        </tr>
+        <tr>
+          <td><code>MERGE</code></td>
+          <td>Actualitza els fills quan actualitzes el pare</td>
+          <td>Sincronització d'actualitzacions</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Cascade al projecte</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Student.java — cascade examples</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="cmt">// Esborrar Student esborra l'AcademicRecord</span>
+<span class="an">@OneToOne</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>, ...)
+<span class="kw">private</span> <span class="cl">AcademicRecord</span> <span class="nm">academicRecord</span>;
+
+<span class="cmt">// Esborrar Student esborra totes les seves Absence</span>
+<span class="an">@OneToMany</span>(mappedBy = <span class="str">"student"</span>, cascade = <span class="cl">CascadeType</span>.<span class="val">ALL</span>)
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="nm">absences</span>;
+
+<span class="cmt">// Course NO té cascade — esborrar Student no esborra els cursos</span>
+<span class="an">@ManyToMany</span>
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Course</span>&gt; <span class="nm">courses</span>;</code></pre>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-title">Per què Course no té cascade?</div>
+      <p>
+        Els cursos poden tenir molts estudiants. Si un estudiant s'esborra i el cascade
+        esborres el curs, <strong>tots els altres estudiants perdrien el curs</strong>.
+        Sense cascade, esborrar un estudiant només elimina la seva fila a la taula pont
+        <code>student_course_rel</code>, no el curs en si.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 7. FETCH ═══════════════════ -->
+  <section>
+    <h2>7. FetchType — quan es carreguen les dades</h2>
+    <p>
+      Controla <strong>quan</strong> JPA executa el SELECT a la BD per carregar
+      les entitats relacionades.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Tipus</th><th>Quan carrega?</th><th>Per defecte a...</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LAZY</code></td>
+          <td>Només quan s'accedeix al camp per primera vegada</td>
+          <td><code>@OneToMany</code>, <code>@ManyToMany</code></td>
+        </tr>
+        <tr>
+          <td><code>EAGER</code></td>
+          <td>Immediatament, en la mateixa consulta del pare</td>
+          <td><code>@OneToOne</code>, <code>@ManyToOne</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/AcademicRecord.java — LAZY fetch</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@OneToOne</span>(fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>, unique = <span class="kw">true</span>)
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;
+
+<span class="cmt">// Quan carregues un AcademicRecord:</span>
+<span class="cmt">// SELECT * FROM records WHERE id = ?   → OK, carrega l'expedient</span>
+<span class="cmt">// academicRecord.getStudent()          → ara fa: SELECT * FROM students WHERE id = ?</span></code></pre>
+    </div>
+
+    <h3>LAZY vs EAGER — quin triar?</h3>
+    <ul>
+      <li>
+        <strong>LAZY</strong> (recomanat per defecte): evita carregar dades que potser
+        no necessites. Millora el rendiment quan hi ha moltes relacions.
+      </li>
+      <li>
+        <strong>EAGER</strong>: útil quan <em>sempre</em> necessis la relació.
+        Però si en tens moltes, pot generar consultes SQL massives (problema N+1).
+      </li>
+    </ul>
+
+    <div class="callout red">
+      <div class="callout-title">Problema N+1</div>
+      <p>
+        Si tens 100 estudiants amb <code>EAGER</code> i cada un té cursos,
+        JPA farà <strong>1 SELECT</strong> per obtenir els estudiants i
+        <strong>100 SELECTs</strong> addicionals per obtenir els cursos de cadascun.
+        Amb <code>LAZY</code> + consultes optimitzades (<code>JOIN FETCH</code>)
+        s'evita aquest problema.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 8. CIRCULAR ═══════════════════ -->
+  <section>
+    <h2>8. El problema de les referències circulars</h2>
+    <p>
+      En una API REST, quan Spring intenta serialitzar una entitat JPA a JSON
+      amb relacions bidireccionals, pot entrar en un <strong>bucle infinit</strong>:
+    </p>
+
+    <div class="diagram">GET /api/students/1  →  Student
+                              │
+                    serialitza <span class="hl">academicRecord</span>
+                              │
+                    AcademicRecord
+                              │
+                    serialitza <span class="hl">student</span>
+                              │
+                    Student  ←──── <span class="or">de nou el mateix objecte!</span>
+                              │
+                    serialitza <span class="hl">academicRecord</span> ...  <span class="or">∞ BUCLE INFINIT</span></div>
+
+    <h3>Solució del projecte: DTOs i Mappers</h3>
+    <p>
+      En lloc de retornar l'entitat JPA directament, el Mapper construeix un DTO
+      <strong>sense incloure la referència de tornada</strong>:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">mapper/StudentMapper.java — toDto (tall del cicle)</span>
+        <span class="code-badge badge-mapper">MAPPER</span>
+      </div>
+      <pre><code><span class="kw">public</span> <span class="cl">StudentDTO</span> <span class="fn">toDto</span>(<span class="cl">Student</span> student) {
+    <span class="kw">if</span> (student == <span class="kw">null</span>) <span class="kw">return null</span>;
+
+    <span class="cl">StudentDTO</span> dto = <span class="kw">new</span> <span class="cl">StudentDTO</span>(
+        student.<span class="fn">getId</span>(),
+        student.<span class="fn">getFirstName</span>(),
+        student.<span class="fn">getLastName</span>(),
+        student.<span class="fn">getEmail</span>()
+    );
+
+    <span class="kw">if</span> (student.<span class="fn">getAcademicRecord</span>() != <span class="kw">null</span>) {
+        <span class="cl">AcademicRecordDTO</span> record = <span class="kw">new</span> <span class="cl">AcademicRecordDTO</span>(
+            student.<span class="fn">getAcademicRecord</span>().<span class="fn">getId</span>(),
+            student.<span class="fn">getAcademicRecord</span>().<span class="fn">getRecordNumber</span>(),
+            student.<span class="fn">getAcademicRecord</span>().<span class="fn">getStatus</span>()
+            <span class="cmt">// NO s'afegeix "student" → cicle tallat ✓</span>
+        );
+        dto.<span class="fn">setAcademicRecord</span>(record);
+    }
+
+    <span class="kw">return</span> dto;
+}</code></pre>
+    </div>
+
+    <h3>JSON resultant — sense cicle</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Resposta GET /api/students/1</span>
+        <span class="code-badge badge-bd">JSON</span>
+      </div>
+      <pre><code>{
+  <span class="str">"id"</span>: 1,
+  <span class="str">"firstName"</span>: <span class="str">"Anna"</span>,
+  <span class="str">"lastName"</span>: <span class="str">"Garcia"</span>,
+  <span class="str">"email"</span>: <span class="str">"anna@escola.cat"</span>,
+  <span class="str">"academicRecord"</span>: {
+    <span class="str">"id"</span>: 1,
+    <span class="str">"recordNumber"</span>: <span class="str">"EXP-2024-001"</span>,
+    <span class="str">"status"</span>: <span class="str">"ACTIVE"</span>
+    <span class="cmt">// cap camp "student" aquí → cicle tallat ✓</span>
+  }
+}</code></pre>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-title">Altres solucions possibles (menys recomanades)</div>
+      <p>
+        <code>@JsonIgnore</code> — ignora el camp en la serialització JSON.<br/>
+        <code>@JsonManagedReference</code> / <code>@JsonBackReference</code> — anota els dos costats de la relació.<br/>
+        <code>@JsonIdentityInfo</code> — substitueix objectes repetits per un identificador.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 9. @JsonIgnore ═══════════════════ -->
+  <section>
+    <h2>9. @JsonIgnore — controlar la serialització JSON</h2>
+    <p>
+      <code>@JsonIgnore</code> és una anotació de la llibreria <strong>Jackson</strong>
+      (el serialitzador JSON que usa Spring Boot per defecte) que indica al serialitzador
+      que <strong>ometi un camp</strong> quan converteix un objecte Java a JSON —
+      i, per defecte, també en la deserialització (JSON → Java).
+    </p>
+
+    <div class="callout">
+      <div class="callout-title">Dependència</div>
+      <p>
+        <code>@JsonIgnore</code> forma part de <code>com.fasterxml.jackson.annotation.JsonIgnore</code>.
+        Spring Boot ja inclou Jackson automàticament via <code>spring-boot-starter-web</code>,
+        no cal cap dependència addicional.
+      </p>
+    </div>
+
+    <h3>Sintaxi bàsica</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Exemple — camp ignorat</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="kw">import</span> com.fasterxml.jackson.annotation.<span class="cl">JsonIgnore</span>;
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="cl">Absence</span> {
+
+    <span class="kw">private</span> <span class="cl">Long</span>   <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">LocalDate</span> <span class="nm">date</span>;
+
+    <span class="an">@JsonIgnore</span>          <span class="cmt">// aquest camp NO apareixerà al JSON de sortida</span>
+    <span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;
+}</code></pre>
+    </div>
+
+    <h3>Per a què serveix — els tres casos principals</h3>
+
+    <h4>1. Trencar cicles de referències circulars (cas més freqüent)</h4>
+    <p>
+      En relacions bidireccionals JPA, si retornes l'entitat directament a la API,
+      Jackson entra en un bucle infinit:
+      <code>Student → absences → Absence → student → Student → ...</code>
+    </p>
+    <p>
+      Posant <code>@JsonIgnore</code> al costat invers o al costat propietari (el que no necessites
+      a la resposta), talles el cicle:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Absence.java — @JsonIgnore al @ManyToOne</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@ManyToOne</span>
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>)
+<span class="an">@JsonIgnore</span>           <span class="cmt">// quan serialitzem Absence, no incloem l'objecte Student</span>
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;</code></pre>
+    </div>
+
+    <p>Resultat JSON quan obtens les absències d'un estudiant:</p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Resposta GET /api/students/1/absences</span>
+        <span class="code-badge badge-bd">JSON</span>
+      </div>
+      <pre><code>[
+  {
+    <span class="str">"id"</span>: 1,
+    <span class="str">"date"</span>: <span class="str">"2024-03-15"</span>,
+    <span class="str">"justified"</span>: <span class="kw">false</span>
+    <span class="cmt">// "student" no apareix → cicle tallat ✓</span>
+  }
+]</code></pre>
+    </div>
+
+    <h4>2. Ocultar dades sensibles</h4>
+    <p>
+      Si una entitat té camps confidencials (contrasenya, token, dades internes),
+      <code>@JsonIgnore</code> impedeix que surtin a la resposta JSON:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/User.java — ocultar camp sensible</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="kw">public class</span> <span class="cl">User</span> {
+    <span class="kw">private</span> <span class="cl">Long</span>   <span class="nm">id</span>;
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">username</span>;
+
+    <span class="an">@JsonIgnore</span>
+    <span class="kw">private</span> <span class="cl">String</span> <span class="nm">password</span>;  <span class="cmt">// mai ha de sortir al JSON de resposta</span>
+}</code></pre>
+    </div>
+
+    <h4>3. Evitar camps redundants o pesats</h4>
+    <p>
+      Camps calculats, col·leccions molt grans o dades que mai necessitarà el client
+      es poden ignorar per reduir la mida de la resposta.
+    </p>
+
+    <h3>@JsonIgnore a les relacions del projecte</h3>
+    <p>
+      Aplicat al projecte school, es posaria al costat de la relació que <em>no ha de
+      ser el punt d'entrada</em> a la serialització, evitant el cicle sense necessitat de DTOs:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/AcademicRecord.java — OneToOne sense cicle</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@OneToOne</span>(fetch = <span class="cl">FetchType</span>.<span class="val">LAZY</span>)
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>, unique = <span class="kw">true</span>)
+<span class="an">@JsonIgnore</span>   <span class="cmt">// AcademicRecord no serialitza l'objecte Student complet</span>
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;</code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">model/Absence.java — ManyToOne sense cicle</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@ManyToOne</span>
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>)
+<span class="an">@JsonIgnore</span>   <span class="cmt">// Absence no serialitza l'objecte Student complet</span>
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;</code></pre>
+    </div>
+
+    <h3>@JsonIgnoreProperties — variant a nivell de classe</h3>
+    <p>
+      En lloc d'anotar cada camp, pots especificar a nivell de classe quins camps ignorar.
+      Útil quan treballes amb classes que no pots modificar directament o quan vols
+      ignorar múltiples camps alhora:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Exemple — @JsonIgnoreProperties</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="an">@JsonIgnoreProperties</span>({<span class="str">"student"</span>, <span class="str">"internalNotes"</span>})
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="cl">AcademicRecord</span> {
+    <span class="cmt">// els camps "student" i "internalNotes" seran ignorats en tota la classe</span>
+    ...
+}</code></pre>
+    </div>
+
+    <h3>@JsonIgnore vs DTO — quan usar cadascun</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Criteri</th>
+          <th><code>@JsonIgnore</code></th>
+          <th>DTO + Mapper</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Complexitat d'implementació</td>
+          <td>Molt baixa — una anotació</td>
+          <td>Alta — cal crear DTOs i Mappers</td>
+        </tr>
+        <tr>
+          <td>Flexibilitat per endpoint</td>
+          <td>Cap — s'aplica a tota la classe</td>
+          <td>Total — cada endpoint pot tenir el seu DTO</td>
+        </tr>
+        <tr>
+          <td>Control de la resposta</td>
+          <td>Limitat — amaga camps, no en transforma</td>
+          <td>Total — pots transformar i combinar camps</td>
+        </tr>
+        <tr>
+          <td>Separació de capes</td>
+          <td>Pobra — l'entitat JPA sap de JSON</td>
+          <td>Bona — cada capa té la seva responsabilitat</td>
+        </tr>
+        <tr>
+          <td>Validació d'entrada</td>
+          <td>Compartida amb l'entitat</td>
+          <td>Separada al DTO d'entrada</td>
+        </tr>
+        <tr>
+          <td>Recomanat per a...</td>
+          <td>Prototips, APIs senzilles, camps sensibles</td>
+          <td>APIs de producció, lògica de negoci complexa</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-title">Limitació clau de @JsonIgnore</div>
+      <p>
+        <code>@JsonIgnore</code> afecta <strong>tots els endpoints</strong> alhora.
+        Si un endpoint necessita el camp i un altre no, hauràs de crear DTOs igualment.
+        Per exemple, si <code>GET /absences</code> no necessita l'estudiant però
+        <code>GET /absences/{id}/detail</code> sí, <code>@JsonIgnore</code> no és suficient.
+      </p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">@JsonIgnore i deserialització</div>
+      <p>
+        Per defecte, <code>@JsonIgnore</code> ignora el camp tant en lectura (serialització)
+        com en escriptura (deserialització). Si vols ignorar-lo <em>només</em> en la sortida
+        però acceptar-lo en l'entrada, usa:
+        <code>@JsonProperty(access = JsonProperty.Access.READ_ONLY)</code>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 10. FLUX ═══════════════════ -->
+  <section>
+    <h2>10. Flux complet d'una petició</h2>
+    <p>
+      El diagrama mostra el camí d'un <code>GET /api/students/1</code> a través de les capes,
+      destacant on intervenen les relacions JPA:
+    </p>
+
+    <div class="diagram"><span class="hl">Client</span>
+   │  GET /api/students/1
+   ▼
+<span class="or">StudentController</span>
+   │  studentService.getStudentById(1)
+   ▼
+<span class="or">StudentService</span>
+   │  studentRepository.findById(1)  →  SQL SELECT FROM students WHERE id = 1
+   │  <span class="cmt">LAZY: academicRecord NO es carrega encara</span>
+   │
+   │  studentMapper.toDto(student)
+   ▼
+<span class="or">StudentMapper</span>
+   │  student.getAcademicRecord()  →  <span class="cmt">ara SÍ fa el SQL (LAZY trigger)</span>
+   │                                  SQL SELECT FROM records WHERE student_id = 1
+   │  construeix AcademicRecordDTO <span class="gr">sense camp student</span>  → <span class="gr">cicle tallat ✓</span>
+   │  retorna StudentDTO
+   ▼
+<span class="or">StudentController</span>
+   │  ResponseEntity.ok(studentDTO)
+   ▼
+<span class="hl">Client</span>  ←  JSON { id, firstName, ..., academicRecord: { id, recordNumber, status } }</div>
+  </section>
+
+  <!-- ═══════════════════ 11. RESUM ═══════════════════ -->
+  <section>
+    <h2>11. Resum de conceptes</h2>
+
+    <table>
+      <thead>
+        <tr><th>Concepte</th><th>On es posa</th><th>Efecte</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>@JoinColumn</code></td>
+          <td>Costat propietari</td>
+          <td>Crea la columna de clau forana a la taula</td>
+        </tr>
+        <tr>
+          <td><code>mappedBy</code></td>
+          <td>Costat invers</td>
+          <td>Indica quin camp de l'altra classe gestiona la relació</td>
+        </tr>
+        <tr>
+          <td><code>@JoinTable</code></td>
+          <td>Propietari del <code>@ManyToMany</code></td>
+          <td>Configura el nom i columnes de la taula pont</td>
+        </tr>
+        <tr>
+          <td><code>cascade = ALL</code></td>
+          <td>Qualsevol relació</td>
+          <td>Propaga persist, remove, merge... al fill</td>
+        </tr>
+        <tr>
+          <td><code>fetch = LAZY</code></td>
+          <td>Qualsevol relació</td>
+          <td>Carrega les dades relacionades sota demanda</td>
+        </tr>
+        <tr>
+          <td><code>fetch = EAGER</code></td>
+          <td>Qualsevol relació</td>
+          <td>Carrega les dades relacionades immediatament</td>
+        </tr>
+        <tr>
+          <td>Mètode helper</td>
+          <td>Entitat pare</td>
+          <td>Sincronitza els dos costats de la relació</td>
+        </tr>
+        <tr>
+          <td>DTO + Mapper</td>
+          <td>Capa de servei</td>
+          <td>Evita referències circulars en la serialització JSON</td>
+        </tr>
+        <tr>
+          <td><code>@JsonIgnore</code></td>
+          <td>Camp de l'entitat</td>
+          <td>Omite el camp en la serialització JSON (Jackson)</td>
+        </tr>
+        <tr>
+          <td><code>@JsonIgnoreProperties</code></td>
+          <td>Classe de l'entitat</td>
+          <td>Ignora múltiples camps des del nivell de classe</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+</body>
+</html>
