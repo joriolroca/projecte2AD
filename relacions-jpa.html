@@ -475,8 +475,31 @@
     <h2>2. Propietari vs costat invers</h2>
     <p>
       En tota relació bidireccional JPA hi ha exactament <strong>un costat propietari</strong>
-      i un <strong>costat invers</strong>.
+      i un <strong>costat invers</strong>. Entendre això és fonamental per saber com JPA
+      escriu a la base de dades.
     </p>
+
+    <h3>L'analogia per entendre-ho</h3>
+    <p>
+      Imagina dos amics, <strong>Anna</strong> i <strong>Expedient</strong>.
+      La targeta d'identificació de l'Expedient porta escrit el DNI d'Anna.
+      Si vols saber a qui pertany l'expedient, mires la targeta de l'Expedient — ell és el
+      <strong>propietari</strong> de la relació. Anna sap que té un expedient, però no porta
+      res escrit: és el costat <strong>invers</strong>.
+    </p>
+    <p>
+      A la base de dades passa el mateix: <strong>qui té la clau forana a la seva taula és el propietari</strong>.
+    </p>
+
+    <div class="callout green">
+      <div class="callout-title">Regla d'or per identificar el propietari</div>
+      <p>
+        Busca qui té <code>@JoinColumn</code> o <code>@JoinTable</code>: aquell és el propietari.
+        L'altre costat sempre tindrà <code>mappedBy</code>.<br/>
+        En una relació <code>@ManyToOne</code> / <code>@OneToMany</code>, el costat
+        <code>@ManyToOne</code> és <strong>sempre</strong> el propietari.
+      </p>
+    </div>
 
     <table>
       <thead>
@@ -493,14 +516,14 @@
           <td><code>mappedBy = "..."</code></td>
         </tr>
         <tr>
-          <td>Crea columna a la BD?</td>
-          <td>Sí</td>
-          <td>No</td>
+          <td>Crea columna FK a la BD?</td>
+          <td>Sí — és qui guarda l'ID de l'altre</td>
+          <td>No — només llegeix la relació</td>
         </tr>
         <tr>
           <td>JPA escolta canvis?</td>
-          <td>Sí</td>
-          <td>No (només lectura)</td>
+          <td>Sí — si el modifiques, JPA l'escriu a la BD</td>
+          <td>No — si el modifiques, JPA ho ignora</td>
         </tr>
         <tr>
           <td>Exemple al projecte</td>
@@ -510,12 +533,36 @@
       </tbody>
     </table>
 
+    <h3>Què significa el valor de mappedBy?</h3>
+    <p>
+      El <strong>string que poses a <code>mappedBy</code></strong> ha de ser exactament el
+      <strong>nom del camp Java</strong> de l'altra classe que gestiona la relació (el propietari).
+      No és el nom de la columna a la BD, és el nom de l'atribut Java.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Exemple — com llegir mappedBy</span>
+        <span class="code-badge badge-model">MODEL</span>
+      </div>
+      <pre><code><span class="cmt">// A Absence.java — costat PROPIETARI</span>
+<span class="an">@ManyToOne</span>
+<span class="an">@JoinColumn</span>(name = <span class="str">"student_id"</span>)
+<span class="kw">private</span> <span class="cl">Student</span> <span class="nm">student</span>;   <span class="cmt">// ← el camp es diu "student"</span>
+                              <span class="cmt">//   (nom del camp Java, no de la columna BD)</span>
+
+<span class="cmt">// A Student.java — costat INVERS</span>
+<span class="an">@OneToMany</span>(mappedBy = <span class="str">"student"</span>)  <span class="cmt">// ← ha de coincidir amb el nom del camp de dalt</span>
+<span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="nm">absences</span>;</code></pre>
+    </div>
+
     <div class="callout warn">
-      <div class="callout-title">Important</div>
+      <div class="callout-title">Error freqüent</div>
       <p>
-        <code>mappedBy</code> li diu a JPA: <em>"jo no gestiono aquesta relació, el camp
-        indicat de l'altra classe ja ho fa"</em>. Si oblides <code>mappedBy</code> al costat
-        invers, JPA crearà una columna extra innecessària a la BD.
+        Si el valor de <code>mappedBy</code> no coincideix exactament amb el nom del camp
+        del costat propietari, JPA llançarà una excepció en arrencar l'aplicació.
+        Si oblides posar <code>mappedBy</code> al costat invers, JPA crearà una columna
+        extra innecessària a la BD.
       </p>
     </div>
   </section>
@@ -569,10 +616,51 @@
       <li><code>cascade = CascadeType.ALL</code> → si esborres o guardes un <code>Student</code>, l'operació es propaga a l'<code>AcademicRecord</code>.</li>
     </ul>
 
-    <h3>Mètode helper — manteniment de consistència</h3>
+    <h3>Per qué cal el setter especial? — El problema sense ell</h3>
+    <p>
+      Amb una relació bidireccional, JPA <strong>només mira el costat propietari</strong>
+      per saber si ha d'escriure la clau forana a la BD. Si actualitzes només el costat invers,
+      JPA no escriurà res:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">❌ Codi INCORRECTE — la FK no es guarda</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cl">Student</span> student = <span class="kw">new</span> <span class="cl">Student</span>(<span class="str">"Anna"</span>, <span class="str">"Garcia"</span>, <span class="str">"anna@escola.cat"</span>);
+<span class="cl">AcademicRecord</span> record = <span class="kw">new</span> <span class="cl">AcademicRecord</span>(<span class="str">"EXP-001"</span>, <span class="str">"ACTIVE"</span>);
+
+<span class="cmt">// Actualitzem NOMÉS el costat invers (Student)</span>
+student.<span class="fn">setAcademicRecord</span>(record);   <span class="cmt">// sense el setter especial</span>
+
+studentRepository.<span class="fn">save</span>(student);
+
+<span class="cmt">// Resultat a la BD:</span>
+<span class="cmt">// records → student_id = NULL  ← JPA ignora el costat invers!</span></code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">✓ Codi CORRECTE — amb el setter especial</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cl">Student</span> student = <span class="kw">new</span> <span class="cl">Student</span>(<span class="str">"Anna"</span>, <span class="str">"Garcia"</span>, <span class="str">"anna@escola.cat"</span>);
+<span class="cl">AcademicRecord</span> record = <span class="kw">new</span> <span class="cl">AcademicRecord</span>(<span class="str">"EXP-001"</span>, <span class="str">"ACTIVE"</span>);
+
+<span class="cmt">// El setter especial actualitza els DOS costats</span>
+student.<span class="fn">setAcademicRecord</span>(record);   <span class="cmt">// aquest setter ja crida record.setStudent(student)</span>
+
+studentRepository.<span class="fn">save</span>(student);
+
+<span class="cmt">// Resultat a la BD:</span>
+<span class="cmt">// records → student_id = 1  ← correcte ✓</span></code></pre>
+    </div>
+
+    <h3>El setter especial a l'entitat</h3>
     <p>
       Amb relacions bidireccionals cal actualitzar <strong>els dos costats</strong> manualment.
-      El setter de <code>Student</code> ho fa automàticament:
+      El setter especial de <code>Student</code> ho fa automàticament en una sola crida:
     </p>
 
     <div class="code-wrap">
@@ -581,10 +669,32 @@
         <span class="code-badge badge-model">MODEL</span>
       </div>
       <pre><code><span class="kw">public void</span> <span class="fn">setAcademicRecord</span>(<span class="cl">AcademicRecord</span> academicRecord) {
-    <span class="kw">this</span>.<span class="nm">academicRecord</span> = academicRecord;
+    <span class="kw">this</span>.<span class="nm">academicRecord</span> = academicRecord;       <span class="cmt">// 1) actualitza el costat invers (Student)</span>
     <span class="kw">if</span> (academicRecord != <span class="kw">null</span>) {
-        academicRecord.<span class="fn">setStudent</span>(<span class="kw">this</span>); <span class="cmt">// actualitza el costat propietari</span>
-    }
+        academicRecord.<span class="fn">setStudent</span>(<span class="kw">this</span>);       <span class="cmt">// 2) actualitza el costat PROPIETARI (AcademicRecord)</span>
+    }                                            <span class="cmt">//    → JPA ara sí escriurà student_id a la BD</span>
+}</code></pre>
+    </div>
+
+    <h3>Ús complet al servei</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">service/StudentService.java — crear estudiant amb expedient</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="kw">public</span> <span class="cl">Student</span> <span class="fn">createStudentWithRecord</span>(<span class="cl">String</span> firstName, <span class="cl">String</span> lastName,
+                                          <span class="cl">String</span> email, <span class="cl">String</span> recordNumber) {
+    <span class="cmt">// 1. Crear les dues entitats</span>
+    <span class="cl">Student</span> student = <span class="kw">new</span> <span class="cl">Student</span>(firstName, lastName, email);
+    <span class="cl">AcademicRecord</span> record = <span class="kw">new</span> <span class="cl">AcademicRecord</span>(recordNumber, <span class="str">"ACTIVE"</span>);
+
+    <span class="cmt">// 2. Vincular-les amb el setter especial (sincronitza els dos costats)</span>
+    student.<span class="fn">setAcademicRecord</span>(record);
+
+    <span class="cmt">// 3. Guardar l'estudiant — cascade = ALL guarda l'AcademicRecord automàticament</span>
+    <span class="cmt">//    JPA genera: INSERT INTO students ... i INSERT INTO records (student_id=?) ...</span>
+    <span class="kw">return</span> studentRepository.<span class="fn">save</span>(student);
 }</code></pre>
     </div>
 
@@ -633,7 +743,46 @@ email                     <span class="hl">student_id (FK → students.id, UNIQU
 <span class="kw">private</span> <span class="cl">List</span>&lt;<span class="cl">Absence</span>&gt; <span class="nm">absences</span> = <span class="kw">new</span> <span class="cl">ArrayList</span>&lt;&gt;();</code></pre>
     </div>
 
-    <h3>Mètodes helper</h3>
+    <h3>Per qué cal el mètode helper? — El problema sense ell</h3>
+    <p>
+      La mateixa regla que a l'<code>@OneToOne</code>: JPA <strong>només escolta el costat propietari</strong>
+      (<code>Absence</code>). Si modifiques la llista de <code>Student</code> sense actualitzar
+      <code>Absence.student</code>, la clau forana quedarà a <code>NULL</code>:
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">❌ Codi INCORRECTE — la FK queda NULL</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cl">Absence</span> absence = <span class="kw">new</span> <span class="cl">Absence</span>(<span class="cl">LocalDate</span>.now(), <span class="kw">false</span>);
+
+<span class="cmt">// Actualitzem NOMÉS la llista (costat invers)</span>
+student.<span class="fn">getAbsences</span>().<span class="fn">add</span>(absence);
+
+studentRepository.<span class="fn">save</span>(student);
+
+<span class="cmt">// Resultat a la BD:</span>
+<span class="cmt">// abcences → student_id = NULL  ← JPA ignora el costat invers!</span></code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">✓ Codi CORRECTE — amb el mètode helper</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cl">Absence</span> absence = <span class="kw">new</span> <span class="cl">Absence</span>(<span class="cl">LocalDate</span>.now(), <span class="kw">false</span>);
+
+<span class="cmt">// addAbsence sincronitza els dos costats internament</span>
+student.<span class="fn">addAbsence</span>(absence);
+
+studentRepository.<span class="fn">save</span>(student);
+
+<span class="cmt">// Resultat a la BD:</span>
+<span class="cmt">// abcences → student_id = 1  ← correcte ✓</span></code></pre>
+    </div>
+
+    <h3>Els mètodes helper a l'entitat</h3>
     <p>
       Com que JPA només escolta canvis al costat propietari (<code>Absence</code>),
       els mètodes helper s'asseguren que els dos costats estiguin sincronitzats:
@@ -645,13 +794,40 @@ email                     <span class="hl">student_id (FK → students.id, UNIQU
         <span class="code-badge badge-model">MODEL</span>
       </div>
       <pre><code><span class="kw">public void</span> <span class="fn">addAbsence</span>(<span class="cl">Absence</span> absence) {
-    <span class="nm">absences</span>.<span class="fn">add</span>(absence);        <span class="cmt">// actualitza el costat Student (invers)</span>
-    absence.<span class="fn">setStudent</span>(<span class="kw">this</span>);   <span class="cmt">// actualitza el costat Absence (propietari)</span>
-}
+    <span class="nm">absences</span>.<span class="fn">add</span>(absence);        <span class="cmt">// 1) actualitza la llista del costat invers (Student)</span>
+    absence.<span class="fn">setStudent</span>(<span class="kw">this</span>);   <span class="cmt">// 2) actualitza el camp del costat PROPIETARI (Absence)</span>
+}                                <span class="cmt">//    → JPA ara sí escriurà student_id a la BD</span>
 
 <span class="kw">public void</span> <span class="fn">removeAbsence</span>(<span class="cl">Absence</span> absence) {
     <span class="nm">absences</span>.<span class="fn">remove</span>(absence);
-    absence.<span class="fn">setStudent</span>(<span class="kw">null</span>);
+    absence.<span class="fn">setStudent</span>(<span class="kw">null</span>);   <span class="cmt">// posa student_id = NULL → l'absència queda desvinculada</span>
+}</code></pre>
+    </div>
+
+    <h3>Ús complet al servei</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">service/AbsenceService.java — afegir absència a un estudiant</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="kw">public</span> <span class="cl">Absence</span> <span class="fn">addAbsenceToStudent</span>(<span class="cl">Long</span> studentId, <span class="cl">LocalDate</span> date, <span class="kw">boolean</span> justified) {
+
+    <span class="cmt">// 1. Recuperar l'estudiant de la BD</span>
+    <span class="cl">Student</span> student = studentRepository.<span class="fn">findById</span>(studentId)
+        .<span class="fn">orElseThrow</span>(() -&gt; <span class="kw">new</span> <span class="cl">RuntimeException</span>(<span class="str">"Estudiant no trobat"</span>));
+
+    <span class="cmt">// 2. Crear la nova absència</span>
+    <span class="cl">Absence</span> absence = <span class="kw">new</span> <span class="cl">Absence</span>(date, justified);
+
+    <span class="cmt">// 3. Vincular: addAbsence sincronitza els dos costats</span>
+    student.<span class="fn">addAbsence</span>(absence);
+
+    <span class="cmt">// 4. Guardar l'estudiant — cascade = ALL guarda l'Absence automàticament</span>
+    <span class="cmt">//    JPA genera: INSERT INTO abcences (date, justified, student_id) VALUES (?, ?, ?)</span>
+    studentRepository.<span class="fn">save</span>(student);
+
+    <span class="kw">return</span> absence;
 }</code></pre>
     </div>
 
@@ -659,8 +835,9 @@ email                     <span class="hl">student_id (FK → students.id, UNIQU
       <div class="callout-title">Compte</div>
       <p>
         Si afegeixes una <code>Absence</code> només a la llista de <code>Student</code> però
-        no asignes <code>absence.setStudent(this)</code>, JPA <strong>no guardarà</strong>
+        no assignes <code>absence.setStudent(this)</code>, JPA <strong>no guardarà</strong>
         la clau forana correctament perquè el propietari és <code>Absence</code>.
+        Usa sempre el mètode <code>addAbsence()</code> en lloc de <code>getAbsences().add()</code>.
       </p>
     </div>
 
@@ -794,6 +971,54 @@ id (PK)    &lt;───  <span class="hl">student_id (FK)</span>           id (
         Sense cascade, esborrar un estudiant només elimina la seva fila a la taula pont
         <code>student_course_rel</code>, no el curs en si.
       </p>
+    </div>
+
+    <h3>Pas a pas — què passa quan cridem save() i delete()</h3>
+    <p>Amb <code>cascade = ALL</code> configurat, JPA fa automàticament el treball que
+    hauríem de fer manualment:</p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Escenari 1 — guardar un estudiant nou amb expedient i absències</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cl">Student</span> student = <span class="kw">new</span> <span class="cl">Student</span>(<span class="str">"Anna"</span>, <span class="str">"Garcia"</span>, <span class="str">"anna@escola.cat"</span>);
+<span class="cl">AcademicRecord</span> record = <span class="kw">new</span> <span class="cl">AcademicRecord</span>(<span class="str">"EXP-001"</span>, <span class="str">"ACTIVE"</span>);
+<span class="cl">Absence</span> abs1 = <span class="kw">new</span> <span class="cl">Absence</span>(<span class="cl">LocalDate</span>.of(<span class="val">2024</span>, <span class="val">3</span>, <span class="val">10</span>), <span class="kw">false</span>);
+
+student.<span class="fn">setAcademicRecord</span>(record);   <span class="cmt">// vincular expedient</span>
+student.<span class="fn">addAbsence</span>(abs1);            <span class="cmt">// vincular absència</span>
+
+studentRepository.<span class="fn">save</span>(student);
+<span class="cmt">// JPA executa (per ordre):</span>
+<span class="cmt">// 1. INSERT INTO students  (first_name, ...) VALUES ('Anna', ...)  → id=1</span>
+<span class="cmt">// 2. INSERT INTO records   (record_number, status, student_id) VALUES ('EXP-001','ACTIVE',1)</span>
+<span class="cmt">// 3. INSERT INTO abcences  (date, justified, student_id) VALUES ('2024-03-10', false, 1)</span></code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Escenari 2 — esborrar l'estudiant</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code>studentRepository.<span class="fn">deleteById</span>(<span class="val">1L</span>);
+<span class="cmt">// cascade = ALL propaga el DELETE:</span>
+<span class="cmt">// 1. DELETE FROM abcences  WHERE student_id = 1  ← cascade REMOVE</span>
+<span class="cmt">// 2. DELETE FROM records   WHERE student_id = 1  ← cascade REMOVE</span>
+<span class="cmt">// 3. DELETE FROM students  WHERE id = 1</span>
+<span class="cmt">// (la fila de student_course_rel s'esborra sola gràcies a la FK constraint)</span></code></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">Escenari 3 — sense cascade (comportament per defecte)</span>
+        <span class="code-badge badge-service">SERVICE</span>
+      </div>
+      <pre><code><span class="cmt">// Si NO hi hagués cascade, hauríem de fer-ho manualment:</span>
+absenceRepository.<span class="fn">deleteAllByStudentId</span>(<span class="val">1L</span>);
+academicRecordRepository.<span class="fn">deleteByStudentId</span>(<span class="val">1L</span>);
+studentRepository.<span class="fn">deleteById</span>(<span class="val">1L</span>);
+<span class="cmt">// Amb cascade = ALL, tot això es fa en una sola crida ↑</span></code></pre>
     </div>
   </section>
 
