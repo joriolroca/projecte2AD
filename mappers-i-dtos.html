@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DTOs i Mappers – r4-demo-school</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0f1117;
+      --surface:     #1a1d27;
+      --surface2:    #222636;
+      --border:      #2e3248;
+      --accent:      #7c6af7;
+      --accent2:     #4fc3f7;
+      --accent3:     #43e97b;
+      --accent4:     #f8a94f;
+      --accent5:     #f06292;
+      --text:        #e2e6f0;
+      --muted:       #8891aa;
+      --code-bg:     #12151f;
+      --tag-dto:     #3a2f70;
+      --tag-mapper:  #1a3a2f;
+      --tag-service: #3a2810;
+      --tag-ctrl:    #2c1a3a;
+      --font-mono:   'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --font-sans:   'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ── Layout ── */
+    .page-wrap { display: flex; min-height: 100vh; }
+
+    nav.sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0;
+    }
+
+    nav.sidebar .logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    nav.sidebar .logo span {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    nav.sidebar .logo h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    nav.sidebar ul { list-style: none; }
+
+    nav.sidebar ul li a {
+      display: block;
+      padding: 7px 20px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13px;
+      transition: all .15s;
+      border-left: 3px solid transparent;
+    }
+
+    nav.sidebar ul li a:hover,
+    nav.sidebar ul li a.active {
+      color: var(--text);
+      background: var(--surface2);
+      border-left-color: var(--accent);
+    }
+
+    nav.sidebar ul .section-label {
+      padding: 14px 20px 4px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      max-width: 940px;
+      padding: 48px 56px;
+      overflow-x: hidden;
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 52px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin: 32px 0 10px;
+    }
+
+    h4 {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--accent4);
+      margin: 22px 0 8px;
+    }
+
+    p { margin-bottom: 14px; color: var(--text); }
+    p + ul, p + ol { margin-top: -6px; }
+
+    ul, ol { padding-left: 20px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; }
+
+    strong { color: var(--text); font-weight: 600; }
+    em { color: var(--accent4); font-style: italic; }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: .82em;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--accent3);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #1e1633 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 40px;
+      margin-bottom: 48px;
+    }
+
+    .hero .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
+    .hero .tags { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .tag-dto    { background: var(--tag-dto);     border-color: var(--accent);  color: var(--accent); }
+    .tag-mapper { background: var(--tag-mapper);  border-color: var(--accent3); color: var(--accent3); }
+    .tag-svc    { background: var(--tag-service); border-color: var(--accent4); color: var(--accent4); }
+    .tag-ctrl   { background: var(--tag-ctrl);    border-color: var(--accent5); color: var(--accent5); }
+    .tag-spring { background: #1a2233; border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── Info boxes ── */
+    .box {
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+
+    .box-info    { background: #151c30; border-color: var(--accent2); }
+    .box-tip     { background: #111f1a; border-color: var(--accent3); }
+    .box-warn    { background: #1f1a11; border-color: var(--accent4); }
+    .box-concept { background: #17142a; border-color: var(--accent); }
+
+    .box .box-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 8px;
+    }
+
+    .box-info    .box-title { color: var(--accent2); }
+    .box-tip     .box-title { color: var(--accent3); }
+    .box-warn    .box-title { color: var(--accent4); }
+    .box-concept .box-title { color: var(--accent); }
+
+    .box p:last-child { margin-bottom: 0; }
+
+    /* ── Code blocks ── */
+    .code-wrap {
+      margin: 18px 0 24px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-header .filename {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .code-header .lang-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .lang-java    { background: #2a1e0e; color: var(--accent4); border: 1px solid #6a3e0e; }
+    .lang-dto     { background: #1e1040; color: var(--accent);  border: 1px solid #4a30a0; }
+    .lang-mapper  { background: #0e2018; color: var(--accent3); border: 1px solid #1e6040; }
+    .lang-service { background: #201808; color: #f0c040;        border: 1px solid #604020; }
+    .lang-ctrl    { background: #1a0820; color: var(--accent5); border: 1px solid #602080; }
+
+    pre {
+      background: var(--code-bg);
+      padding: 20px 22px;
+      overflow-x: auto;
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #c8d0e8;
+    }
+
+    /* Syntax highlight via spans */
+    .kw  { color: #c084fc; }   /* keyword */
+    .cl  { color: #93c5fd; }   /* class name */
+    .fn  { color: #67e8f9; }   /* function/method */
+    .str { color: #86efac; }   /* string */
+    .ann { color: #fb923c; }   /* annotation */
+    .cm  { color: #6b7280; font-style: italic; } /* comment */
+    .hl  { background: #2a2d3e; display: block; margin: 0 -22px; padding: 0 22px; } /* highlight line */
+
+    /* ── Diagrams ── */
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+
+    .diagram .d-box {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .d-client  { background: #1a1d27; border: 1px solid #555; color: #aaa; }
+    .d-ctrl    { background: var(--tag-ctrl);    border: 1px solid var(--accent5); color: var(--accent5); }
+    .d-svc     { background: var(--tag-service); border: 1px solid var(--accent4); color: var(--accent4); }
+    .d-mapper  { background: var(--tag-mapper);  border: 1px solid var(--accent3); color: var(--accent3); }
+    .d-repo    { background: #141b2a; border: 1px solid var(--accent2); color: var(--accent2); }
+    .d-db      { background: #1a1a1a; border: 1px solid #555; color: #aaa; }
+    .d-dto-in  { background: var(--tag-dto); border: 1px solid var(--accent); color: var(--accent); }
+    .d-dto-out { background: var(--tag-dto); border: 1px solid var(--accent); color: var(--accent); }
+    .d-entity  { background: #1a1427; border: 1px solid #7c5af7; color: #b09af7; }
+    .d-arrow   { color: var(--muted); }
+
+    /* ── Comparació taula ── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .compare-card .cc-header {
+      padding: 12px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .cc-header.request { background: #1e1633; color: var(--accent); border-bottom: 1px solid #2e2050; }
+    .cc-header.response { background: #0e2018; color: var(--accent3); border-bottom: 1px solid #1e4030; }
+
+    .compare-card pre { font-size: 12px; }
+
+    /* ── Step by step ── */
+    .steps { counter-reset: step; margin: 20px 0; }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .step-body { flex: 1; }
+    .step-body h3 { margin-top: 0; }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--text);
+      font-weight: 700;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:hover td { background: var(--surface); }
+
+    td code { font-size: .8em; }
+
+    /* ── Section divider ── */
+    .section-anchor { display: block; position: relative; top: -80px; visibility: hidden; }
+
+    /* ── Print ── */
+    @media print {
+      nav.sidebar { display: none; }
+      main { max-width: 100%; padding: 20px; }
+      .hero { break-inside: avoid; }
+      .step { break-inside: avoid; }
+      h2 { break-before: page; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+  ═══════════════════════════════════════ -->
+  <nav class="sidebar">
+    <div class="logo">
+      <span>r4-demo-school</span>
+      <h2>DTOs i Mappers</h2>
+    </div>
+    <ul>
+      <li class="section-label">Introducció</li>
+      <li><a href="#intro">Qu&egrave; s&oacute;n els DTOs?</a></li>
+      <li><a href="#mappers">Qu&egrave; s&oacute;n els Mappers?</a></li>
+      <li><a href="#flux">Flux de dades</a></li>
+
+      <li class="section-label">DTOs del projecte</li>
+      <li><a href="#dto-student">StudentDTO</a></li>
+      <li><a href="#dto-student-req">StudentCreateRequest</a></li>
+      <li><a href="#dto-academic">AcademicRecordDTO</a></li>
+      <li><a href="#dto-academic-req">AcademicRecordRequest</a></li>
+
+      <li class="section-label">Mappers del projecte</li>
+      <li><a href="#mapper-student">StudentMapper</a></li>
+      <li><a href="#mapper-academic">AcademicRecordMapper</a></li>
+      <li><a href="#circular">Refer&egrave;ncia circular</a></li>
+
+      <li class="section-label">Impacte als serveis</li>
+      <li><a href="#service-student">StudentService</a></li>
+      <li><a href="#service-academic">AcademicRecordService</a></li>
+
+      <li class="section-label">Impacte als controladors</li>
+      <li><a href="#ctrl-student">StudentController</a></li>
+      <li><a href="#ctrl-academic">AcademicRecordController</a></li>
+
+      <li class="section-label">Guia pas a pas</li>
+      <li><a href="#step1">1. Crear els DTOs</a></li>
+      <li><a href="#step2">2. Crear el Mapper</a></li>
+      <li><a href="#step3">3. Adaptar el Servei</a></li>
+      <li><a href="#step4">4. Adaptar el Controlador</a></li>
+      <li><a href="#step5">5. Verificar</a></li>
+    </ul>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       MAIN
+  ═══════════════════════════════════════ -->
+  <main>
+
+    <!-- HERO -->
+    <div class="hero">
+      <h1>DTOs i Mappers</h1>
+      <p class="subtitle">
+        Com convertim entitats JPA en respostes d'API — i peticions HTTP en objectes persistibles —
+        sense barrejar capes ni exposar l'esquema de base de dades.
+      </p>
+      <div class="tags">
+        <span class="tag tag-dto">DTO</span>
+        <span class="tag tag-mapper">Mapper</span>
+        <span class="tag tag-svc">Service</span>
+        <span class="tag tag-ctrl">Controller</span>
+        <span class="tag tag-spring">Spring Boot</span>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════
+         1. QUÈ SÓN DTOs
+    ═══════════════════════ -->
+    <span id="intro" class="section-anchor"></span>
+    <h2>1. Què són els DTOs?</h2>
+
+    <p>
+      Un <strong>DTO (Data Transfer Object)</strong> és una classe Java senzilla —
+      sense lògica de negoci — el propòsit de la qual és transportar dades entre capes.
+      En una API REST distingim dos tipus:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tipus</th>
+          <th>Descripció</th>
+          <th>Exemples al projecte</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Request DTO</strong></td>
+          <td>Representa el cos de la petició HTTP entrant. Conté els camps que el client pot enviar.</td>
+          <td><code>StudentCreateRequest</code>, <code>AcademicRecordRequest</code></td>
+        </tr>
+        <tr>
+          <td><strong>Response DTO</strong></td>
+          <td>Representa la resposta que l'API retorna al client. S'usa per controlar quina informació s'exposa.</td>
+          <td><code>StudentDTO</code>, <code>AcademicRecordDTO</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="box box-concept">
+      <p class="box-title">Per qu&egrave; no retornem l'entitat JPA directament?</p>
+      <p>
+        Les entitats JPA (<code>@Entity</code>) estan acoblades a la base de dades:
+        contenen anotacions de persistència, relacions bidireccionals i, sovint,
+        camps que no volem exposar (contrasenyes, claus foranes internes, etc.).
+        Els DTOs permeten desacoblar el que es guarda del que s'envia o es rep.
+      </p>
+    </div>
+
+
+    <!-- ══════════════════════
+         2. QUÈ SÓN ELS MAPPERS
+    ═══════════════════════ -->
+    <span id="mappers" class="section-anchor"></span>
+    <h2>2. Què són els Mappers?</h2>
+
+    <p>
+      Un <strong>Mapper</strong> és una classe de Spring (<code>@Component</code>) que s'encarrega de la
+      <em>conversió</em> entre entitats i DTOs. Centralitza tota la lògica de transformació en un
+      sol lloc, de manera que ni el servei ni el controlador han de saber com es construeix un DTO.
+    </p>
+
+    <div class="box box-tip">
+      <p class="box-title">Convenci&oacute; de noms</p>
+      <p>
+        Per convenció, els mètodes d'un mapper es diuen <code>toDto()</code> i <code>toEntity()</code>.
+        Alguns projectes usen <code>toDTO()</code> (majúscules) — al repositori, <code>AcademicRecordMapper</code>
+        usa <code>toDTO()</code> mentre que <code>StudentMapper</code> usa <code>toDto()</code>. Ambdues formes
+        són correctes, però és recomanable ser consistent dins del projecte.
+      </p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Mètode</th>
+          <th>Entrada</th>
+          <th>Sortida</th>
+          <th>Quins en fa servir</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>toDto()</code> / <code>toDTO()</code></td>
+          <td>Entitat JPA</td>
+          <td>Response DTO</td>
+          <td>Servei (operacions de lectura i creació)</td>
+        </tr>
+        <tr>
+          <td><code>toEntity()</code></td>
+          <td>Request DTO</td>
+          <td>Entitat JPA</td>
+          <td>Servei (creació i actualització)</td>
+        </tr>
+      </tbody>
+    </table>
+
+
+    <!-- ══════════════════════
+         3. FLUX DE DADES
+    ═══════════════════════ -->
+    <span id="flux" class="section-anchor"></span>
+    <h2>3. Flux complet de dades</h2>
+
+    <p>
+      El diagrama inferior mostra el camí que fa una petició POST per crear un estudiant.
+      Observa en quins punts es produeix la conversió:
+    </p>
+
+    <img src="img/image.png"
+         alt="Diagrama de seqüència del flux complet de dades – POST /api/students"
+         style="width:100%; border:1px solid var(--border); border-radius:10px; display:block;" />
+
+    <div class="box box-info">
+      <p class="box-title">El Repository no veu mai un DTO</p>
+      <p>
+        Fixa't que el <code>StudentRepository</code> mai rep ni retorna un DTO.
+        Sempre treballa exclusivament amb l'entitat JPA <code>Student</code>.
+        La conversió la fa el Mapper dins del Servei, <strong>no al controlador ni al repositori</strong>.
+      </p>
+    </div>
+
+
+    <!-- ══════════════════════════
+         4. DTOs DEL PROJECTE
+    ═══════════════════════════ -->
+    <span id="dto-student" class="section-anchor"></span>
+    <h2>4. DTOs del projecte</h2>
+
+    <h3>StudentDTO — Response</h3>
+    <p>
+      S'usa per retornar informació d'un estudiant al client. Inclou
+      un camp <code>academicRecord</code> de tipus <code>AcademicRecordDTO</code> que permet
+      retornar l'expedient acadèmic aniuat dins la mateixa resposta.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">dto/StudentDTO.java</span>
+        <span class="lang-badge lang-dto">Response DTO</span>
+      </div>
+      <pre><span class="kw">public class</span> <span class="cl">StudentDTO</span> {
+    <span class="kw">private</span> Long id;
+    <span class="kw">private</span> String firstName;
+    <span class="kw">private</span> String lastName;
+    <span class="kw">private</span> String email;
+    <span class="kw">private</span> <span class="cl">AcademicRecordDTO</span> academicRecord; <span class="cm">// DTO aniuat, no entitat JPA</span>
+
+    <span class="cm">// Constructor sense academicRecord (per evitar recursivitat)</span>
+    <span class="kw">public</span> <span class="fn">StudentDTO</span>(Long id, String firstName, String lastName, String email) { ... }
+
+    <span class="cm">// Getters i Setters per tots els camps</span>
+    <span class="kw">public</span> <span class="cl">AcademicRecordDTO</span> <span class="fn">getAcademicRecord</span>() { <span class="kw">return</span> academicRecord; }
+    <span class="kw">public void</span> <span class="fn">setAcademicRecord</span>(<span class="cl">AcademicRecordDTO</span> academicRecord) { <span class="kw">this</span>.academicRecord = academicRecord; }
+}</pre>
+    </div>
+
+    <div class="box box-warn">
+      <p class="box-title">Camp opcional — s'assigna despr&eacute;s de la construcci&oacute;</p>
+      <p>
+        El camp <code>academicRecord</code> no s'inclou al constructor principal.
+        El Mapper el comprova per <code>null</code> i el seta amb un <code>setter</code>
+        quan existeix. Això evita errors quan un estudiant no té expedient assignat.
+      </p>
+    </div>
+
+    <!-- StudentCreateRequest -->
+    <span id="dto-student-req" class="section-anchor"></span>
+    <h3>StudentCreateRequest — Request</h3>
+    <p>
+      Representa el JSON que el client envia per crear un estudiant.
+      Permet crear estudiant i expedient acadèmic en una sola crida gràcies
+      als camps opcionals <code>recordNumber</code> i <code>recordStatus</code>.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">dto/StudentCreateRequest.java</span>
+        <span class="lang-badge lang-dto">Request DTO</span>
+      </div>
+      <pre><span class="kw">public class</span> <span class="cl">StudentCreateRequest</span> {
+    <span class="kw">private</span> String firstName;   <span class="cm">// Obligatori</span>
+    <span class="kw">private</span> String lastName;    <span class="cm">// Obligatori</span>
+    <span class="kw">private</span> String email;       <span class="cm">// Obligatori — ha de ser únic</span>
+    <span class="kw">private</span> String recordNumber; <span class="cm">// Opcional — si s'envia, es crea l'expedient</span>
+    <span class="kw">private</span> String recordStatus; <span class="cm">// Opcional — per defecte "ACTIVE"</span>
+
+    <span class="cm">// Getters i Setters...</span>
+}</pre>
+    </div>
+
+    <p>Exemple de JSON que el client envia:</p>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">Exemple petició POST /api/students</span>
+        <span class="lang-badge lang-java">JSON</span>
+      </div>
+      <pre>{
+  <span class="str">"firstName"</span>:    <span class="str">"Anna"</span>,
+  <span class="str">"lastName"</span>:     <span class="str">"Garcia"</span>,
+  <span class="str">"email"</span>:        <span class="str">"anna.garcia@escola.cat"</span>,
+  <span class="str">"recordNumber"</span>: <span class="str">"EXP-2024-001"</span>,   <span class="cm">// Opcional</span>
+  <span class="str">"recordStatus"</span>: <span class="str">"ACTIVE"</span>           <span class="cm">// Opcional</span>
+}</pre>
+    </div>
+
+    <!-- AcademicRecordDTO -->
+    <span id="dto-academic" class="section-anchor"></span>
+    <h3>AcademicRecordDTO — Response</h3>
+    <p>
+      Retorna la informació d'un expedient acadèmic. Inclou un camp <code>student</code>
+      de tipus <code>StudentDTO</code>, però aquest <code>StudentDTO</code> aniuat
+      <strong>no inclou de nou el camp <code>academicRecord</code></strong>
+      per evitar la referència circular.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">dto/AcademicRecordDTO.java</span>
+        <span class="lang-badge lang-dto">Response DTO</span>
+      </div>
+      <pre><span class="kw">public class</span> <span class="cl">AcademicRecordDTO</span> {
+    <span class="kw">private</span> Long id;
+    <span class="kw">private</span> String recordNumber;
+    <span class="kw">private</span> String status;
+    <span class="kw">private</span> <span class="cl">StudentDTO</span> student; <span class="cm">// StudentDTO sense camp academicRecord → no hi ha cicle</span>
+
+    <span class="kw">public</span> <span class="fn">AcademicRecordDTO</span>(Long id, String recordNumber, String status) { ... }
+
+    <span class="cm">// Getters i Setters...</span>
+}</pre>
+    </div>
+
+    <!-- AcademicRecordRequest -->
+    <span id="dto-academic-req" class="section-anchor"></span>
+    <h3>AcademicRecordRequest — Request</h3>
+    <p>
+      DTO mínim per actualitzar un expedient. Només conté els camps
+      que es poden modificar; l'associació amb l'estudiant es gestiona
+      al servei, no aquí.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">dto/AcademicRecordRequest.java</span>
+        <span class="lang-badge lang-dto">Request DTO</span>
+      </div>
+      <pre><span class="kw">public class</span> <span class="cl">AcademicRecordRequest</span> {
+    <span class="kw">private</span> String recordNumber;
+    <span class="kw">private</span> String status;
+
+    <span class="cm">// Getters i Setters...</span>
+}</pre>
+    </div>
+
+
+    <!-- ══════════════════════════
+         5. MAPPERS DEL PROJECTE
+    ═══════════════════════════ -->
+    <span id="mapper-student" class="section-anchor"></span>
+    <h2>5. Mappers del projecte</h2>
+
+    <h3>StudentMapper</h3>
+    <p>
+      Gestiona la conversió bidireccional per a l'entitat <code>Student</code>.
+      Té dos mètodes: <code>toDto()</code> per les lectures i <code>toEntity()</code>
+      per les creacions.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">mapper/StudentMapper.java</span>
+        <span class="lang-badge lang-mapper">Mapper</span>
+      </div>
+      <pre><span class="ann">@Component</span>   <span class="cm">// Spring el registra com a bean injectable</span>
+<span class="kw">public class</span> <span class="cl">StudentMapper</span> {
+
+    <span class="cm">// ── Entitat JPA → Response DTO ─────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">StudentDTO</span> <span class="fn">toDto</span>(<span class="cl">Student</span> student) {
+        <span class="kw">if</span> (student == <span class="kw">null</span>) <span class="kw">return null</span>;  <span class="cm">// Null-safe</span>
+
+        <span class="cl">StudentDTO</span> dto = <span class="kw">new</span> <span class="cl">StudentDTO</span>(
+            student.<span class="fn">getId</span>(),
+            student.<span class="fn">getFirstName</span>(),
+            student.<span class="fn">getLastName</span>(),
+            student.<span class="fn">getEmail</span>()
+        );
+
+        <span class="cm">// Si l'estudiant té expedient, el convertim a DTO aniuat</span>
+        <span class="kw">if</span> (student.<span class="fn">getAcademicRecord</span>() != <span class="kw">null</span>) {
+            <span class="cl">AcademicRecordDTO</span> record = <span class="kw">new</span> <span class="cl">AcademicRecordDTO</span>(
+                student.<span class="fn">getAcademicRecord</span>().<span class="fn">getId</span>(),
+                student.<span class="fn">getAcademicRecord</span>().<span class="fn">getRecordNumber</span>(),
+                student.<span class="fn">getAcademicRecord</span>().<span class="fn">getStatus</span>()
+                <span class="cm">// NOTA: no afegim student de nou → evitem referència circular</span>
+            );
+            dto.<span class="fn">setAcademicRecord</span>(record);
+        }
+
+        <span class="kw">return</span> dto;
+    }
+
+    <span class="cm">// ── Request DTO → Entitat JPA ──────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">Student</span> <span class="fn">toEntity</span>(<span class="cl">StudentCreateRequest</span> request) {
+        <span class="kw">if</span> (request == <span class="kw">null</span>) <span class="kw">return null</span>;  <span class="cm">// Null-safe</span>
+
+        <span class="cl">Student</span> student = <span class="kw">new</span> <span class="cl">Student</span>(
+            request.<span class="fn">getFirstName</span>(),
+            request.<span class="fn">getLastName</span>(),
+            request.<span class="fn">getEmail</span>()
+        );
+
+        <span class="cm">// Creem l'expedient acadèmic si el client n'ha enviat el número</span>
+        <span class="kw">if</span> (request.<span class="fn">getRecordNumber</span>() != <span class="kw">null</span>) {
+            <span class="cl">AcademicRecord</span> record = <span class="kw">new</span> <span class="cl">AcademicRecord</span>(
+                request.<span class="fn">getRecordNumber</span>(),
+                request.<span class="fn">getRecordStatus</span>() != <span class="kw">null</span>
+                    ? request.<span class="fn">getRecordStatus</span>()
+                    : <span class="str">"ACTIVE"</span>  <span class="cm">// Valor per defecte</span>
+            );
+            student.<span class="fn">setAcademicRecord</span>(record);
+        }
+
+        <span class="kw">return</span> student;
+    }
+}</pre>
+    </div>
+
+    <h4>Punts clau de StudentMapper</h4>
+    <ul>
+      <li><strong>Null-safety:</strong> tots dos mètodes comproven <code>null</code> a l'inici i retornen <code>null</code> si l'entrada és nul·la.</li>
+      <li><strong>Creació en cascada:</strong> <code>toEntity()</code> pot crear un <code>AcademicRecord</code> associat si el request ho inclou — gràcies al camp <code>recordNumber</code>.</li>
+      <li><strong>Evitar recursivitat:</strong> quan <code>toDto()</code> crea l'<code>AcademicRecordDTO</code> aniuat, usa el constructor de 3 paràmetres que no inclou l'estudiant, trencant el cicle.</li>
+    </ul>
+
+    <!-- AcademicRecordMapper -->
+    <span id="mapper-academic" class="section-anchor"></span>
+    <h3>AcademicRecordMapper</h3>
+    <p>
+      Gestiona la conversió per a <code>AcademicRecord</code>. Quan retorna el DTO,
+      inclou l'estudiant associat com a <code>StudentDTO</code>, però sense l'expedient
+      d'aquest estudiant.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">mapper/AcademicRecordMapper.java</span>
+        <span class="lang-badge lang-mapper">Mapper</span>
+      </div>
+      <pre><span class="ann">@Component</span>
+<span class="kw">public class</span> <span class="cl">AcademicRecordMapper</span> {
+
+    <span class="cm">// ── Entitat JPA → Response DTO ─────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AcademicRecordDTO</span> <span class="fn">toDTO</span>(<span class="cl">AcademicRecord</span> entity) {
+        <span class="kw">if</span> (entity == <span class="kw">null</span>) <span class="kw">return null</span>;
+
+        <span class="cl">AcademicRecordDTO</span> dto = <span class="kw">new</span> <span class="cl">AcademicRecordDTO</span>(
+            entity.<span class="fn">getId</span>(),
+            entity.<span class="fn">getRecordNumber</span>(),
+            entity.<span class="fn">getStatus</span>()
+        );
+
+        <span class="cm">// Afegim l'estudiant associat si existeix</span>
+        <span class="kw">if</span> (entity.<span class="fn">getStudent</span>() != <span class="kw">null</span>) {
+            <span class="cl">StudentDTO</span> student = <span class="kw">new</span> <span class="cl">StudentDTO</span>(
+                entity.<span class="fn">getStudent</span>().<span class="fn">getId</span>(),
+                entity.<span class="fn">getStudent</span>().<span class="fn">getFirstName</span>(),
+                entity.<span class="fn">getStudent</span>().<span class="fn">getLastName</span>(),
+                entity.<span class="fn">getStudent</span>().<span class="fn">getEmail</span>()
+                <span class="cm">// NOTA: no afegim academicRecord → trenca la recursivitat</span>
+            );
+            dto.<span class="fn">setStudent</span>(student);
+        }
+
+        <span class="kw">return</span> dto;
+    }
+
+    <span class="cm">// ── Request DTO → Entitat JPA ──────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AcademicRecord</span> <span class="fn">toEntity</span>(<span class="cl">AcademicRecordRequest</span> request) {
+        <span class="cl">AcademicRecord</span> entity = <span class="kw">new</span> <span class="cl">AcademicRecord</span>();
+        entity.<span class="fn">setRecordNumber</span>(request.<span class="fn">getRecordNumber</span>());
+        entity.<span class="fn">setStatus</span>(request.<span class="fn">getStatus</span>());
+        <span class="cm">// NOTA: no assignem l'estudiant aquí — ho fa el servei</span>
+        <span class="kw">return</span> entity;
+    }
+}</pre>
+    </div>
+
+    <!-- Referència circular -->
+    <span id="circular" class="section-anchor"></span>
+    <h3>Referència circular — com s'evita</h3>
+
+    <p>
+      <code>Student</code> té un <code>AcademicRecord</code> i <code>AcademicRecord</code> té un <code>Student</code>.
+      Si els dos DTOs s'inclouen mútuament sense restriccions, el serialitzador JSON entraria en un bucle infinit.
+      Els mappers ho resolen construint l'objecte aniuat manualment sense tornar a incloure la referència de retorn:
+    </p>
+
+    <div class="diagram">
+<span style="color:var(--text)">Quan el Mapper genera un</span> <span class="d-box d-dto-out">StudentDTO</span><span style="color:var(--text)">:</span>
+
+  StudentDTO {
+      id, firstName, lastName, email,
+      academicRecord: <span class="d-box d-dto-out">AcademicRecordDTO</span> {
+          id, recordNumber, status
+          <span style="color:var(--accent3)">// ← NO s'inclou "student" aquí → cicle tallat ✓</span>
+      }
+  }
+
+<span style="color:var(--text)">Quan el Mapper genera un</span> <span class="d-box d-dto-out">AcademicRecordDTO</span><span style="color:var(--text)">:</span>
+
+  AcademicRecordDTO {
+      id, recordNumber, status,
+      student: <span class="d-box d-dto-out">StudentDTO</span> {
+          id, firstName, lastName, email
+          <span style="color:var(--accent3)">// ← NO s'inclou "academicRecord" aquí → cicle tallat ✓</span>
+      }
+  }
+    </div>
+
+
+    <!-- ══════════════════════════
+         6. IMPACTE ALS SERVEIS
+    ═══════════════════════════ -->
+    <span id="service-student" class="section-anchor"></span>
+    <h2>6. Com afecta el Mapper al Servei</h2>
+
+    <div class="box box-concept">
+      <p class="box-title">Regla general del Servei</p>
+      <p>
+        El servei <strong>mai</strong> construeix DTOs ni entitats manualment.
+        Delega completament al Mapper. Només s'ocupa de la lògica de negoci
+        (validacions, crides al repositori, orquestració).
+      </p>
+    </div>
+
+    <h3>StudentService — injecció i ús del Mapper</h3>
+    <p>
+      <code>StudentService</code> injecta el <code>StudentMapper</code> per constructor
+      (injectable final — patró recomanat a Spring):
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">service/StudentService.java — injecció</span>
+        <span class="lang-badge lang-service">Service</span>
+      </div>
+      <pre><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="cl">StudentService</span> {
+
+    <span class="kw">private final</span> <span class="cl">StudentRepository</span> studentRepository;
+    <span class="kw">private final</span> <span class="cl">StudentMapper</span> studentMapper;  <span class="cm">// Mapper injectat per constructor</span>
+
+    <span class="kw">public</span> <span class="fn">StudentService</span>(<span class="cl">StudentRepository</span> studentRepository,
+                           <span class="cl">StudentMapper</span> studentMapper) {
+        <span class="kw">this</span>.studentRepository = studentRepository;
+        <span class="kw">this</span>.studentMapper = studentMapper;
+    }
+    ...
+}</pre>
+    </div>
+
+    <h4>Lectura per ID — mapper a la sortida</h4>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">service/StudentService.java — getStudentById</span>
+        <span class="lang-badge lang-service">Service</span>
+      </div>
+      <pre><span class="kw">public</span> <span class="cl">StudentDTO</span> <span class="fn">getStudentById</span>(Long id) {
+    Optional&lt;<span class="cl">Student</span>&gt; student = studentRepository.<span class="fn">findById</span>(id);  <span class="cm">// 1. Crida al repo → entitat</span>
+    <span class="kw">if</span> (student.<span class="fn">isPresent</span>()) {
+        <span class="hl">        <span class="kw">return</span> studentMapper.<span class="fn">toDto</span>(student.<span class="fn">get</span>());  <span class="cm">// 2. Mapper: entitat → DTO</span></span>
+    }
+    <span class="kw">return null</span>;
+}</pre>
+    </div>
+
+    <h4>Llistar tots — mapper en bucle</h4>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">service/StudentService.java — getAllStudents</span>
+        <span class="lang-badge lang-service">Service</span>
+      </div>
+      <pre><span class="kw">public</span> List&lt;<span class="cl">StudentDTO</span>&gt; <span class="fn">getAllStudents</span>() {
+    List&lt;<span class="cl">Student</span>&gt; students = studentRepository.<span class="fn">findAll</span>();  <span class="cm">// 1. Repo → llista d'entitats</span>
+
+    List&lt;<span class="cl">StudentDTO</span>&gt; studentsListDTO = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">for</span> (<span class="cl">Student</span> item : students) {
+        <span class="hl">        <span class="cl">StudentDTO</span> dto = studentMapper.<span class="fn">toDto</span>(item);  <span class="cm">// 2. Mapper: cada entitat → DTO</span></span>
+        studentsListDTO.<span class="fn">add</span>(dto);
+    }
+    <span class="kw">return</span> studentsListDTO;
+}</pre>
+    </div>
+
+    <h4>Crear — mapper a l'entrada i a la sortida</h4>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">service/StudentService.java — createStudent</span>
+        <span class="lang-badge lang-service">Service</span>
+      </div>
+      <pre><span class="kw">public</span> <span class="cl">StudentDTO</span> <span class="fn">createStudent</span>(<span class="cl">StudentCreateRequest</span> request) {
+    <span class="cm">// Validació de negoci (el repositori no en fa)</span>
+    <span class="kw">if</span> (studentRepository.<span class="fn">existsByEmail</span>(request.<span class="fn">getEmail</span>())) {
+        <span class="kw">throw new</span> Error(<span class="str">"L'email ja existeix: "</span> + request.<span class="fn">getEmail</span>());
+    }
+
+    <span class="hl">    <span class="cl">Student</span> student = studentMapper.<span class="fn">toEntity</span>(request);         <span class="cm">// 1. Mapper: Request → Entitat</span></span>
+    <span class="cl">Student</span> savedStudent = studentRepository.<span class="fn">save</span>(student);       <span class="cm">// 2. Repo: guarda l'entitat</span>
+    <span class="hl">    <span class="kw">return</span> studentMapper.<span class="fn">toDto</span>(savedStudent);                   <span class="cm">// 3. Mapper: Entitat → DTO</span></span>
+}</pre>
+    </div>
+
+    <div class="box box-info">
+      <p class="box-title">Dos usos del mapper a createStudent</p>
+      <p>
+        Observa que a <code>createStudent</code> el mapper s'usa <strong>dues vegades</strong>:
+        primer per convertir el request en entitat (entrada),
+        i després per convertir l'entitat guardada en DTO (sortida).
+        Sempre es retorna el DTO obtingut de la BD — no el request original —
+        perquè la BD pot afegir valors com l'ID autogenerat.
+      </p>
+    </div>
+
+    <!-- AcademicRecordService -->
+    <span id="service-academic" class="section-anchor"></span>
+    <h3>AcademicRecordService — injecció per @Autowired</h3>
+    <p>
+      <code>AcademicRecordService</code> usa la injecció per camps amb <code>@Autowired</code>
+      (alternativa a la injecció per constructor).
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">service/AcademicRecordService.java</span>
+        <span class="lang-badge lang-service">Service</span>
+      </div>
+      <pre><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="cl">AcademicRecordService</span> {
+
+    <span class="ann">@Autowired</span>
+    <span class="kw">private</span> <span class="cl">AcademicRecordRepository</span> recordRepository;
+
+    <span class="ann">@Autowired</span>
+    <span class="kw">private</span> <span class="cl">AcademicRecordMapper</span> mapper;  <span class="cm">// Mapper injectat per @Autowired</span>
+
+    <span class="cm">// ── Consultar tots ────────────────────────────────────────────────</span>
+    <span class="kw">public</span> List&lt;<span class="cl">AcademicRecordDTO</span>&gt; <span class="fn">findAll</span>() {
+        List&lt;<span class="cl">AcademicRecord</span>&gt; entities = recordRepository.<span class="fn">findAll</span>();  <span class="cm">// Repo → entitats</span>
+
+        List&lt;<span class="cl">AcademicRecordDTO</span>&gt; dtos = <span class="kw">new</span> ArrayList&lt;&gt;();
+        <span class="kw">for</span> (<span class="cl">AcademicRecord</span> record : entities) {
+            <span class="hl">            <span class="cl">AcademicRecordDTO</span> dto = mapper.<span class="fn">toDTO</span>(record);  <span class="cm">// Mapper: entitat → DTO</span></span>
+            dtos.<span class="fn">add</span>(dto);
+        }
+        <span class="kw">return</span> dtos;
+    }
+
+    <span class="cm">// ── Consultar per ID ──────────────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AcademicRecordDTO</span> <span class="fn">findById</span>(Long id) {
+        Optional&lt;<span class="cl">AcademicRecord</span>&gt; record = recordRepository.<span class="fn">findById</span>(id);
+        <span class="kw">if</span> (record.<span class="fn">isPresent</span>()) {
+            <span class="hl">            <span class="kw">return</span> mapper.<span class="fn">toDTO</span>(record.<span class="fn">get</span>());  <span class="cm">// Mapper: entitat → DTO</span></span>
+        }
+        <span class="kw">return null</span>;
+    }
+
+    <span class="cm">// ── Modificar ─────────────────────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AcademicRecordDTO</span> <span class="fn">update</span>(Long id, <span class="cl">AcademicRecordRequest</span> request) {
+        <span class="hl">        <span class="cl">AcademicRecord</span> academic = mapper.<span class="fn">toEntity</span>(request);         <span class="cm">// Mapper: Request → Entitat</span></span>
+        <span class="cl">AcademicRecord</span> academicUpdated = recordRepository.<span class="fn">save</span>(academic); <span class="cm">// Repo: guarda</span>
+        <span class="hl">        <span class="kw">return</span> mapper.<span class="fn">toDTO</span>(academicUpdated);                      <span class="cm">// Mapper: Entitat → DTO</span></span>
+    }
+}</pre>
+    </div>
+
+
+    <!-- ══════════════════════════
+         7. IMPACTE ALS CONTROLADORS
+    ═══════════════════════════ -->
+    <span id="ctrl-student" class="section-anchor"></span>
+    <h2>7. Com afecta el Mapper al Controlador</h2>
+
+    <div class="box box-tip">
+      <p class="box-title">El controlador no usa mai el Mapper directament</p>
+      <p>
+        El controlador <strong>mai</strong> crida el mapper. Treballa exclusivament amb DTOs:
+        rep <em>Request DTOs</em> del cos HTTP i retorna <em>Response DTOs</em> al client.
+        L'impacte del mapper al controlador és <em>indirecte</em>: el controlador
+        ha de declarar els tipus DTO correctes als seus mètodes.
+      </p>
+    </div>
+
+    <h3>StudentController</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">controller/StudentController.java</span>
+        <span class="lang-badge lang-ctrl">Controller</span>
+      </div>
+      <pre><span class="ann">@RestController</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/students"</span>)
+<span class="kw">public class</span> <span class="cl">StudentController</span> {
+
+    <span class="kw">private final</span> <span class="cl">StudentService</span> studentService;  <span class="cm">// Injecció per constructor</span>
+
+    <span class="kw">public</span> <span class="fn">StudentController</span>(<span class="cl">StudentService</span> studentService) {
+        <span class="kw">this</span>.studentService = studentService;
+    }
+
+    <span class="cm">// ── POST /api/students ─────────────────────────────────────────────</span>
+    <span class="ann">@PostMapping</span>
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">StudentDTO</span>&gt; <span class="fn">createStudent</span>(
+            <span class="ann">@RequestBody</span> <span class="cl">StudentCreateRequest</span> request) {  <span class="cm">// ← Request DTO com a paràmetre</span>
+        <span class="cl">StudentDTO</span> createdStudent = studentService.<span class="fn">createStudent</span>(request);
+        <span class="kw">return new</span> ResponseEntity&lt;&gt;(createdStudent, HttpStatus.CREATED);
+        <span class="cm">// El servei (via Mapper) retorna un StudentDTO — el controlador no el construeix</span>
+    }
+
+    <span class="cm">// ── GET /api/students/{id} ─────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">StudentDTO</span>&gt; <span class="fn">getStudentById</span>(
+            <span class="ann">@PathVariable</span> Long id) {
+        <span class="cl">StudentDTO</span> student = studentService.<span class="fn">getStudentById</span>(id);  <span class="cm">// Ja ve convertit</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(student);
+    }
+
+    <span class="cm">// ── GET /api/students ──────────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>
+    <span class="kw">public</span> ResponseEntity&lt;List&lt;<span class="cl">StudentDTO</span>&gt;&gt; <span class="fn">getAllStudents</span>() {
+        List&lt;<span class="cl">StudentDTO</span>&gt; students = studentService.<span class="fn">getAllStudents</span>();  <span class="cm">// Llista de DTOs</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(students);
+    }
+
+    <span class="cm">// ── DELETE /api/students/{id} ──────────────────────────────────────</span>
+    <span class="ann">@DeleteMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> ResponseEntity&lt;String&gt; <span class="fn">deleteStudent</span>(<span class="ann">@PathVariable</span> Long id) {
+        studentService.<span class="fn">deleteStudent</span>(id);  <span class="cm">// El servei valida i elimina</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(<span class="str">"borrat correctament"</span>);
+    }
+}</pre>
+    </div>
+
+    <!-- AcademicRecordController -->
+    <span id="ctrl-academic" class="section-anchor"></span>
+    <h3>AcademicRecordController</h3>
+
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="filename">controller/AcademicRecordController.java</span>
+        <span class="lang-badge lang-ctrl">Controller</span>
+      </div>
+      <pre><span class="ann">@RestController</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/records"</span>)
+<span class="kw">public class</span> <span class="cl">AcademicRecordController</span> {
+
+    <span class="ann">@Autowired</span>
+    <span class="kw">private</span> <span class="cl">AcademicRecordService</span> recordService;
+
+    <span class="cm">// ── GET /api/records ───────────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>
+    <span class="kw">public</span> ResponseEntity&lt;List&lt;<span class="cl">AcademicRecordDTO</span>&gt;&gt; <span class="fn">getAll</span>() {
+        List&lt;<span class="cl">AcademicRecordDTO</span>&gt; records = recordService.<span class="fn">findAll</span>();  <span class="cm">// Llista de DTOs</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(records);
+    }
+
+    <span class="cm">// ── GET /api/records/{id} ──────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">AcademicRecordDTO</span>&gt; <span class="fn">getOne</span>(<span class="ann">@PathVariable</span> Long id) {
+        <span class="cl">AcademicRecordDTO</span> dto = recordService.<span class="fn">findById</span>(id);  <span class="cm">// DTO o null</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(dto);
+    }
+
+    <span class="cm">// ── PUT /api/records/{id} ──────────────────────────────────────────</span>
+    <span class="ann">@PutMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">AcademicRecordDTO</span>&gt; <span class="fn">update</span>(
+            <span class="ann">@PathVariable</span> Long id,
+            <span class="ann">@RequestBody</span> <span class="cl">AcademicRecordRequest</span> request) {  <span class="cm">// ← Request DTO</span>
+        <span class="cl">AcademicRecordDTO</span> updated = recordService.<span class="fn">update</span>(id, request);  <span class="cm">// Response DTO</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(updated);
+    }
+}</pre>
+    </div>
+
+
+    <!-- ══════════════════════════
+         8. GUIA PAS A PAS
+    ═══════════════════════════ -->
+    <span id="step1" class="section-anchor"></span>
+    <h2>8. Guia pas a pas — afegir Mapper a una nova entitat</h2>
+
+    <p>
+      Suposem que volem afegir suport complet per a l'entitat <code>Absence</code>
+      (faltes d'assistència) seguint el mateix patró del projecte.
+    </p>
+
+    <div class="steps">
+
+      <!-- PAS 1 -->
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <span id="step1" class="section-anchor"></span>
+          <h3>Crear els DTOs</h3>
+          <p>
+            Crea un <em>Request DTO</em> per rebre dades del client i un
+            <em>Response DTO</em> per retornar-les. Cap dels dos hauria de
+            tenir anotacions JPA ni lògica de negoci.
+          </p>
+
+          <div class="compare-grid">
+            <div class="compare-card">
+              <div class="cc-header request">Request DTO</div>
+              <pre><span class="kw">public class</span> <span class="cl">AbsenceRequest</span> {
+    <span class="cm">// Camps que el client pot enviar</span>
+    <span class="kw">private</span> LocalDate date;
+    <span class="kw">private</span> <span class="kw">boolean</span> justified;
+    <span class="kw">private</span> Long studentId;
+
+    <span class="cm">// Getters i Setters...</span>
+}</pre>
+            </div>
+            <div class="compare-card">
+              <div class="cc-header response">Response DTO</div>
+              <pre><span class="kw">public class</span> <span class="cl">AbsenceDTO</span> {
+    <span class="cm">// Camps que l'API retorna</span>
+    <span class="kw">private</span> Long id;
+    <span class="kw">private</span> LocalDate date;
+    <span class="kw">private</span> <span class="kw">boolean</span> justified;
+    <span class="kw">private</span> Long studentId;
+
+    <span class="cm">// Getters i Setters...</span>
+}</pre>
+            </div>
+          </div>
+
+          <div class="box box-tip">
+            <p class="box-title">Convenció del projecte</p>
+            <p>
+              Els Response DTOs s'anomenen <code>XxxDTO</code> i els Request DTOs
+              <code>XxxRequest</code> o <code>XxxCreateRequest</code>.
+              Crea'ls al paquet <code>dto/</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAS 2 -->
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <span id="step2" class="section-anchor"></span>
+          <h3>Crear el Mapper</h3>
+          <p>
+            Crea la classe al paquet <code>mapper/</code> i anota-la amb <code>@Component</code>
+            perquè Spring la pugui injectar. Implementa els mètodes <code>toDto()</code>
+            i <code>toEntity()</code> amb comprovació de <code>null</code>.
+          </p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="filename">mapper/AbsenceMapper.java — nou fitxer</span>
+              <span class="lang-badge lang-mapper">Mapper</span>
+            </div>
+            <pre><span class="kw">package</span> com.demo.ra4.school.ra4_school.mapper;
+
+<span class="kw">import</span> org.springframework.stereotype.Component;
+<span class="kw">import</span> com.demo.ra4.school.ra4_school.dto.AbsenceDTO;
+<span class="kw">import</span> com.demo.ra4.school.ra4_school.dto.AbsenceRequest;
+<span class="kw">import</span> com.demo.ra4.school.ra4_school.model.Absence;
+
+<span class="ann">@Component</span>   <span class="cm">// ← IMPRESCINDIBLE: registra el bean a Spring</span>
+<span class="kw">public class</span> <span class="cl">AbsenceMapper</span> {
+
+    <span class="cm">// ── Entitat JPA → Response DTO ─────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AbsenceDTO</span> <span class="fn">toDto</span>(<span class="cl">Absence</span> entity) {
+        <span class="kw">if</span> (entity == <span class="kw">null</span>) <span class="kw">return null</span>;  <span class="cm">// Null-safe</span>
+
+        <span class="cl">AbsenceDTO</span> dto = <span class="kw">new</span> <span class="cl">AbsenceDTO</span>();
+        dto.<span class="fn">setId</span>(entity.<span class="fn">getId</span>());
+        dto.<span class="fn">setDate</span>(entity.<span class="fn">getDate</span>());
+        dto.<span class="fn">setJustified</span>(entity.<span class="fn">isJustified</span>());
+        <span class="cm">// Agafem l'ID de l'estudiant sense incloure tot l'objecte Student</span>
+        <span class="kw">if</span> (entity.<span class="fn">getStudent</span>() != <span class="kw">null</span>) {
+            dto.<span class="fn">setStudentId</span>(entity.<span class="fn">getStudent</span>().<span class="fn">getId</span>());
+        }
+        <span class="kw">return</span> dto;
+    }
+
+    <span class="cm">// ── Request DTO → Entitat JPA ──────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">Absence</span> <span class="fn">toEntity</span>(<span class="cl">AbsenceRequest</span> request) {
+        <span class="kw">if</span> (request == <span class="kw">null</span>) <span class="kw">return null</span>;  <span class="cm">// Null-safe</span>
+
+        <span class="cl">Absence</span> entity = <span class="kw">new</span> <span class="cl">Absence</span>();
+        entity.<span class="fn">setDate</span>(request.<span class="fn">getDate</span>());
+        entity.<span class="fn">setJustified</span>(request.<span class="fn">isJustified</span>());
+        <span class="cm">// NOTA: no assignem Student aquí — ho farà el Servei</span>
+        <span class="kw">return</span> entity;
+    }
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAS 3 -->
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <span id="step3" class="section-anchor"></span>
+          <h3>Adaptar el Servei</h3>
+          <p>
+            Al servei, injecta el nou mapper i crida'l en cada operació:
+            <code>toEntity()</code> abans de guardar i <code>toDto()</code>
+            abans de retornar.
+          </p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="filename">service/AbsenceService.java — nou fitxer</span>
+              <span class="lang-badge lang-service">Service</span>
+            </div>
+            <pre><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="cl">AbsenceService</span> {
+
+    <span class="kw">private final</span> <span class="cl">AbsenceRepository</span>   absenceRepository;
+    <span class="kw">private final</span> <span class="cl">StudentRepository</span>   studentRepository;
+    <span class="kw">private final</span> <span class="cl">AbsenceMapper</span>       absenceMapper;  <span class="cm">// ← injectat per constructor</span>
+
+    <span class="kw">public</span> <span class="fn">AbsenceService</span>(<span class="cl">AbsenceRepository</span> absenceRepository,
+                          <span class="cl">StudentRepository</span> studentRepository,
+                          <span class="cl">AbsenceMapper</span> absenceMapper) {
+        <span class="kw">this</span>.absenceRepository = absenceRepository;
+        <span class="kw">this</span>.studentRepository = studentRepository;
+        <span class="kw">this</span>.absenceMapper = absenceMapper;
+    }
+
+    <span class="cm">// ── Crear falta ────────────────────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AbsenceDTO</span> <span class="fn">create</span>(<span class="cl">AbsenceRequest</span> request) {
+        <span class="hl">        <span class="cl">Absence</span> entity = absenceMapper.<span class="fn">toEntity</span>(request);  <span class="cm">// 1. Mapper: Request → Entitat</span></span>
+
+        <span class="cm">// El Mapper no assigna Student — ho fem aquí perquè cal buscar al repo</span>
+        <span class="cl">Student</span> student = studentRepository.<span class="fn">findById</span>(request.<span class="fn">getStudentId</span>())
+            .orElseThrow(() -> <span class="kw">new</span> Error(<span class="str">"Estudiant no trobat"</span>));
+        entity.<span class="fn">setStudent</span>(student);
+
+        <span class="cl">Absence</span> saved = absenceRepository.<span class="fn">save</span>(entity);        <span class="cm">// 2. Repo: guardar</span>
+        <span class="hl">        <span class="kw">return</span> absenceMapper.<span class="fn">toDto</span>(saved);                     <span class="cm">// 3. Mapper: Entitat → DTO</span></span>
+    }
+
+    <span class="cm">// ── Consultar per ID ──────────────────────────────────────────────</span>
+    <span class="kw">public</span> <span class="cl">AbsenceDTO</span> <span class="fn">findById</span>(Long id) {
+        <span class="cl">Absence</span> entity = absenceRepository.<span class="fn">findById</span>(id)
+            .orElseThrow(() -> <span class="kw">new</span> Error(<span class="str">"Falta no trobada"</span>));
+        <span class="hl">        <span class="kw">return</span> absenceMapper.<span class="fn">toDto</span>(entity);  <span class="cm">// Mapper: Entitat → DTO</span></span>
+    }
+
+    <span class="cm">// ── Llistar totes ─────────────────────────────────────────────────</span>
+    <span class="kw">public</span> List&lt;<span class="cl">AbsenceDTO</span>&gt; <span class="fn">findAll</span>() {
+        List&lt;<span class="cl">Absence</span>&gt; entities = absenceRepository.<span class="fn">findAll</span>();
+        List&lt;<span class="cl">AbsenceDTO</span>&gt; dtos = <span class="kw">new</span> ArrayList&lt;&gt;();
+        <span class="kw">for</span> (<span class="cl">Absence</span> item : entities) {
+            <span class="hl">            dtos.<span class="fn">add</span>(absenceMapper.<span class="fn">toDto</span>(item));  <span class="cm">// Mapper en bucle</span></span>
+        }
+        <span class="kw">return</span> dtos;
+    }
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAS 4 -->
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <span id="step4" class="section-anchor"></span>
+          <h3>Adaptar el Controlador</h3>
+          <p>
+            El controlador <strong>no toca el mapper</strong>. Únicament declara
+            els tipus de DTOs als paràmetres i als tipus de retorn.
+          </p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="filename">controller/AbsenceController.java — nou fitxer</span>
+              <span class="lang-badge lang-ctrl">Controller</span>
+            </div>
+            <pre><span class="ann">@RestController</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/absences"</span>)
+<span class="kw">public class</span> <span class="cl">AbsenceController</span> {
+
+    <span class="kw">private final</span> <span class="cl">AbsenceService</span> absenceService;
+
+    <span class="kw">public</span> <span class="fn">AbsenceController</span>(<span class="cl">AbsenceService</span> absenceService) {
+        <span class="kw">this</span>.absenceService = absenceService;
+    }
+
+    <span class="cm">// ── POST /api/absences ─────────────────────────────────────────────</span>
+    <span class="ann">@PostMapping</span>
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">AbsenceDTO</span>&gt; <span class="fn">create</span>(
+            <span class="ann">@RequestBody</span> <span class="cl">AbsenceRequest</span> request) {  <span class="cm">// ← Request DTO</span>
+        <span class="cl">AbsenceDTO</span> created = absenceService.<span class="fn">create</span>(request);
+        <span class="kw">return new</span> ResponseEntity&lt;&gt;(created, HttpStatus.CREATED);
+    }
+
+    <span class="cm">// ── GET /api/absences/{id} ─────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> ResponseEntity&lt;<span class="cl">AbsenceDTO</span>&gt; <span class="fn">getOne</span>(
+            <span class="ann">@PathVariable</span> Long id) {
+        <span class="cl">AbsenceDTO</span> dto = absenceService.<span class="fn">findById</span>(id);  <span class="cm">// ← Response DTO</span>
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(dto);
+    }
+
+    <span class="cm">// ── GET /api/absences ──────────────────────────────────────────────</span>
+    <span class="ann">@GetMapping</span>
+    <span class="kw">public</span> ResponseEntity&lt;List&lt;<span class="cl">AbsenceDTO</span>&gt;&gt; <span class="fn">getAll</span>() {
+        <span class="kw">return</span> ResponseEntity.<span class="fn">ok</span>(absenceService.<span class="fn">findAll</span>());
+    }
+}</pre>
+          </div>
+
+          <div class="box box-info">
+            <p class="box-title">On col·locar cada fitxer nou</p>
+            <table style="margin-top:6px">
+              <thead><tr><th>Fitxer</th><th>Paquet</th></tr></thead>
+              <tbody>
+                <tr><td><code>AbsenceRequest.java</code></td><td><code>dto/</code></td></tr>
+                <tr><td><code>AbsenceDTO.java</code></td><td><code>dto/</code></td></tr>
+                <tr><td><code>AbsenceMapper.java</code></td><td><code>mapper/</code></td></tr>
+                <tr><td><code>AbsenceService.java</code></td><td><code>service/</code></td></tr>
+                <tr><td><code>AbsenceController.java</code></td><td><code>controller/</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAS 5 -->
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <span id="step5" class="section-anchor"></span>
+          <h3>Verificar que tot funciona</h3>
+          <p>
+            Comprova els punts següents per assegurar-te que el Mapper
+            s'integra correctament:
+          </p>
+          <ul>
+            <li>
+              <strong>@Component al Mapper:</strong> sense aquesta anotació,
+              Spring no el registra i la injecció fallaria amb
+              <code>NoSuchBeanDefinitionException</code>.
+            </li>
+            <li>
+              <strong>Null-safety:</strong> tots els mètodes del Mapper comproven
+              <code>if (input == null) return null;</code> a l'inici.
+            </li>
+            <li>
+              <strong>Sense recursivitat:</strong> quan un DTO aniuat referencia
+              l'objecte pare, s'usa el constructor sense el camp pare
+              o es deixa el camp a <code>null</code>.
+            </li>
+            <li>
+              <strong>El Repositori no veu DTOs:</strong> confirma que cap
+              mètode del repositori accepta ni retorna un DTO.
+            </li>
+            <li>
+              <strong>El Controlador no crida el Mapper:</strong> confirma que
+              el controlador no importa cap classe del paquet <code>mapper/</code>.
+            </li>
+          </ul>
+
+          <div class="box box-warn">
+            <p class="box-title">Error freq&uuml;ent</p>
+            <p>
+              Oblidar <code>@Component</code> al Mapper és l'error més habitual.
+              El compilador no el detecta, però l'aplicació peta en arrencar amb
+              un error d'injecció de dependències.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.steps -->
+
+
+    <!-- ══════════════════════════
+         RESUM FINAL
+    ═══════════════════════════ -->
+    <h2>Resum — responsabilitats de cada capa</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Capa</th>
+          <th>Responsabilitat respecte als DTOs i Mappers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DTO (Request)</strong></td>
+          <td>Transporta les dades de la petició HTTP. Cap lògica, cap anotació JPA.</td>
+        </tr>
+        <tr>
+          <td><strong>DTO (Response)</strong></td>
+          <td>Transporta les dades de la resposta API. Controla quina informació s'exposa al client.</td>
+        </tr>
+        <tr>
+          <td><strong>Mapper (<code>@Component</code>)</strong></td>
+          <td>Únic responsable de convertir entre entitats i DTOs. Té <code>toDto()</code> i <code>toEntity()</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Repository</strong></td>
+          <td>Mai veu DTOs. Treballa exclusivament amb entitats JPA. No canvia quan s'afegeixen mappers.</td>
+        </tr>
+        <tr>
+          <td><strong>Service</strong></td>
+          <td>Injecta el Mapper. Crida <code>toEntity()</code> abans de guardar i <code>toDto()</code> abans de retornar.</td>
+        </tr>
+        <tr>
+          <td><strong>Controller</strong></td>
+          <td>Mai crida el Mapper directament. Rep Request DTOs i retorna Response DTOs gràcies al Servei.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="height: 60px;"></div>
+
+  </main>
+</div>
+
+<script>
+  // Highlight sidebar link on scroll
+  const anchors = document.querySelectorAll('.section-anchor');
+  const navLinks = document.querySelectorAll('nav.sidebar a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-80px 0px -70% 0px' });
+
+  anchors.forEach(a => observer.observe(a));
+</script>
+
+</body>
+</html>
