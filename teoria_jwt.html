@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spring Security + JWT — Teoria</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --primary: #1a6b3c;
+      --primary-light: #e8f5ee;
+      --accent: #2e7d32;
+      --text: #212121;
+      --text-muted: #555;
+      --border: #dee2e6;
+      --code-bg: #1e1e2e;
+      --code-text: #cdd6f4;
+      --tag-bg: #e3f2fd;
+      --tag-text: #1565c0;
+      --warning-bg: #fff8e1;
+      --warning-border: #f9a825;
+      --info-bg: #e8f5e9;
+      --info-border: #2e7d32;
+      --radius: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #1a6b3c 0%, #2e7d32 60%, #43a047 100%);
+      color: white;
+      padding: 48px 32px 40px;
+      text-align: center;
+    }
+    header h1 { font-size: 2.4rem; font-weight: 700; margin-bottom: 8px; }
+    header p  { font-size: 1.05rem; opacity: 0.88; color: white; }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      display: inline-block;
+      padding: 14px 18px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: border-color 0.2s;
+    }
+    nav a:hover { border-bottom-color: var(--primary); }
+
+    /* ── COLORS PER BLOC ── */
+    .bloc-1 .bloc-header { background: linear-gradient(135deg, #1565c0, #1976d2); }
+    .bloc-2 .bloc-header { background: linear-gradient(135deg, #1a6b3c, #2e7d32); }
+    .bloc-3 .bloc-header { background: linear-gradient(135deg, #6a1b9a, #7b1fa2); }
+    .bloc-4 .bloc-header { background: linear-gradient(135deg, #bf360c, #e64a19); }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── BLOC ── */
+    .bloc {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+
+    .bloc-header {
+      background: var(--primary);
+      color: white;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .bloc-header .num {
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; flex-shrink: 0;
+    }
+    .bloc-header h2 { font-size: 1.25rem; font-weight: 700; }
+    .bloc-header p  { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+
+    .bloc-body { padding: 28px; }
+
+    /* ── SECCIONS ── */
+    .seccio { margin-bottom: 36px; }
+    .seccio:last-child { margin-bottom: 0; }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary-light);
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 16px 0 8px;
+    }
+
+    p { margin-bottom: 10px; color: var(--text-muted); }
+
+    /* ── LLISTES ── */
+    ul, ol { padding-left: 22px; margin-bottom: 10px; }
+    li { color: var(--text-muted); margin-bottom: 4px; }
+    li strong { color: var(--text); }
+
+    /* ── CODI ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin: 14px 0;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+    code {
+      background: #f0f0f0;
+      color: #c0392b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+    pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+    /* ── CAIXES INFORMATIVES ── */
+    .box {
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin: 14px 0;
+      font-size: 0.93rem;
+    }
+    .box-info    { background: var(--info-bg);    border-left: 4px solid var(--info-border); }
+    .box-warning { background: var(--warning-bg); border-left: 4px solid var(--warning-border); }
+    .box-tip     { background: #f3e5f5;           border-left: 4px solid #7b1fa2; }
+    .box p { margin-bottom: 0; color: var(--text); }
+    .box strong { color: var(--text); }
+
+    /* ── DIAGRAMA FLUX ── */
+    .flux {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 0;
+      font-family: 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      line-height: 2;
+      color: #1a3a2a;
+    }
+    .flux .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .flux .step-num {
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .flux .arrow {
+      text-align: center;
+      color: var(--primary);
+      font-size: 1.1rem;
+      padding-left: 36px;
+    }
+
+    /* ── TAULA ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--bg); }
+
+    /* ── TAGS ── */
+    .tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin: 2px 2px;
+    }
+    .tag-green { background: var(--primary-light); color: var(--primary); }
+
+    /* ── FITXER CARD ── */
+    .fitxer-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .fitxer-card-header {
+      background: #f0f4f8;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .fitxer-card-header .ruta {
+      font-family: monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .fitxer-card-header .ordre {
+      margin-left: auto;
+      background: var(--primary);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .fitxer-card-body { padding: 16px 18px; }
+    .fitxer-card-body p { margin-bottom: 8px; }
+    .fitxer-card-body ul { margin-bottom: 0; }
+
+    /* ── JWT VISUAL ── */
+    .jwt-parts {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .jwt-part {
+      flex: 1;
+      min-width: 160px;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 0.88rem;
+    }
+    .jwt-part h5 { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    .jwt-header-part   { background: #fce4ec; border: 2px solid #e91e63; }
+    .jwt-payload-part  { background: #e8f5e9; border: 2px solid #4caf50; }
+    .jwt-sign-part     { background: #e3f2fd; border: 2px solid #2196f3; }
+
+    /* ── ORDRE IMPLEMENTACIÓ ── */
+    .ordre-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .ordre-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .ordre-item .num-ordre {
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      width: 32px; height: 32px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.9rem;
+    }
+    .ordre-item .info .nom { font-weight: 700; font-size: 0.92rem; }
+    .ordre-item .info .desc { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── DIVIDER ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      .bloc-body { padding: 18px; }
+      .jwt-parts { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Spring Security + JWT</h1>
+  <p>Apunts de teoria — DAM 2n curs &nbsp;·&nbsp; Accés i Dades</p>
+</header>
+
+<nav>
+  <a href="#bloc1">Bloc 1 — Conceptes</a>
+  <a href="#bloc2">Bloc 2 — Spring Security</a>
+  <a href="#bloc3">Bloc 3 — Codi del projecte</a>
+  <a href="#bloc4">Bloc 4 — Com funciona el sistema</a>
+</nav>
+
+<main>
+
+  <!-- ═══════════════════════════════════════════════════
+       BLOC 1 — CONCEPTES BÀSICS
+  ════════════════════════════════════════════════════ -->
+  <section class="bloc" id="bloc1">
+    <div class="bloc-header">
+      <div class="num">1</div>
+      <div>
+        <h2>Conceptes bàsics de seguretat web</h2>
+        <p>Autenticació, autorització, sessions, tokens i JWT</p>
+      </div>
+    </div>
+    <div class="bloc-body">
+
+      <!-- 1.1 -->
+      <div class="seccio">
+        <h3>1.1 Autenticació vs Autorització</h3>
+        <p>Dos conceptes que sovint es confonen però que fan coses molt diferents:</p>
+        <table>
+          <thead>
+            <tr><th>Concepte</th><th>Pregunta que respon</th><th>Exemple</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Autenticació</strong></td>
+              <td><em>Qui ets?</em></td>
+              <td>Login amb usuari i contrasenya</td>
+            </tr>
+            <tr>
+              <td><strong>Autorització</strong></td>
+              <td><em>Què pots fer?</em></td>
+              <td>Només els ADMIN poden veure tots els usuaris</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="box box-info">
+          <p><strong>Exemple del món real:</strong> Entrar a un edifici amb targeta és <em>autenticació</em>. Que certes portes no s'obrin perquè no tens permís és <em>autorització</em>.</p>
+        </div>
+        <p>En el nostre projecte, Spring Security gestiona les dues coses: primer comprova qui ets (mitjançant el token JWT) i després comprova si pots accedir a l'endpoint que has demanat (mitjançant els rols <code>USER</code> o <code>ADMIN</code>).</p>
+      </div>
+
+      <hr />
+
+      <!-- 1.2 -->
+      <div class="seccio">
+        <h3>1.2 Sessions vs Tokens (stateful vs stateless)</h3>
+        <p>Quan un usuari fa login, el servidor ha de recordar d'alguna manera que aquell usuari ja s'ha identificat. <br> Hi ha dues maneres de fer-ho:</p>
+
+        <h4>Sessions (stateful) — manera clàssica</h4>
+        <ul>
+          <li>El servidor guarda en memòria que l'usuari X està connectat.</li>
+          <li>El client rep un ID de sessió (normalment en una cookie).</li>
+          <li>A cada petició, el client envia l'ID i el servidor el busca en memòria.</li>
+          <li><strong>Problema:</strong> si hi ha molts servidors, tots han de compartir la memòria de sessions.</li>
+        </ul>
+
+        <h4>Tokens (stateless) — manera moderna per a APIs REST</h4>
+        <ul>
+          <li>El servidor <strong>no guarda res</strong>.</li>
+          <li>Quan l'usuari fa login, el servidor genera un token i el retorna.</li>
+          <li>El client guarda el token i l'envia a cada petició.</li>
+          <li>El servidor simplement valida el token — no necessita memòria.</li>
+          <li><strong>Ideal per a APIs REST</strong>: qualsevol servidor pot validar qualsevol token.</li>
+        </ul>
+
+        <div class="box box-info">
+          <p><strong>El nostre projecte</strong> al ser una APIRest utilitzarem els tokens (stateless) per a l'autenticació mitjançant JWT. </p>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 1.3 -->
+      <div class="seccio">
+        <h3>1.3 Què és JWT</h3>
+        <p>JWT (<em>JSON Web Token</em>) és un estàndard per transmetre informació de forma segura entre dues parts, en format text. Conté dades de l'usuari i una firma criptogràfica que garanteix que ningú l'ha modificat.</p>
+
+        <p>Un JWT té <strong>tres parts separades per un punt (<code>.</code>)</strong>:</p>
+
+        <div class="jwt-parts">
+          <div class="jwt-part jwt-header-part">
+            <h5>Header</h5>
+            <p style="margin:0; font-size:0.82rem;">Tipus de token i algorisme de firma.<br/>Ex: <code>{"alg":"HS256","typ":"JWT"}</code></p>
+          </div>
+          <div class="jwt-part jwt-payload-part">
+            <h5>Payload</h5>
+            <p style="margin:0; font-size:0.82rem;">Dades de l'usuari (nom, rol, quan expira).<br/>Ex: <code>{"sub":"joan","role":"ADMIN","exp":...}</code></p>
+          </div>
+          <div class="jwt-part jwt-sign-part">
+            <h5>Signature</h5>
+            <p style="margin:0; font-size:0.82rem;">Firma digital. Garanteix que el token no ha estat modificat.</p>
+          </div>
+        </div>
+
+        <p>Les tres parts es codifiquen en Base64 i s'ajunten amb punts:</p>
+        <pre>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FuIiwicm9sZSI6IkFETUlOIn0.abc123XYZ</pre>
+
+        <div class="box box-warning">
+          <p><strong>Important:</strong> El contingut del JWT és llegible per tothom (Base64 no és xifrat). <strong>No hi posis contrasenyes ni dades sensibles.</strong> El que garanteix la seguretat és la <em>firma</em>: si algú modifica el payload, la firma deixa de ser vàlida i el servidor el rebutja.</p>
+        </div>
+
+        <h4>Cicle de vida d'un JWT</h4>
+        <ul>
+          <li>El token té una <strong>data d'expiració</strong> (al nostre projecte, 24 hores).</li>
+          <li>Quan expira, l'usuari ha de tornar a fer login per obtenir-ne un de nou.</li>
+          <li>El servidor <strong>no pot invalidar un token</strong> manualment (és stateless): per això l'expiració curta és important.</li>
+        </ul>
+      </div>
+
+      <hr />
+
+      <!-- 1.4 -->
+      <div class="seccio">
+        <h3>1.4 Què és Spring Security</h3>
+        <p>Spring Security és una llibreria de Spring que s'encarrega de protegir la nostra aplicació. <br>En el moment que l'afegim al projecte:</p>
+        <ul>
+          <li>Totes les rutes queden protegides per defecte.</li>
+          <li>Qualsevol petició sense autenticació rep un error <code>401 Unauthorized</code>.</li>
+          <li>Proporciona un sistema extensible per definir les nostres pròpies regles.</li>
+        </ul>
+
+        <p>Els tres conceptes clau de Spring Security que usem al projecte:</p>
+        <table>
+          <thead>
+            <tr><th>Concepte</th><th>Fitxer al projecte</th><th>Funció</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SecurityFilterChain</strong></td>
+              <td><code>SecurityConfig.java</code></td>
+              <td>Defineix quines rutes estan protegides i quines no</td>
+            </tr>
+            <tr>
+              <td><strong>UserDetailsService</strong></td>
+              <td><code>ApplicationConfig.java</code></td>
+              <td>Li diu a Spring Security on trobar els usuaris (BBDD)</td>
+            </tr>
+            <tr>
+              <td><strong>UserDetails</strong></td>
+              <td><code>User.java</code></td>
+              <td>Representa un usuari amb nom, contrasenya i rols</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr />
+
+      <!-- 1.5 -->
+      <div class="seccio">
+        <h3>1.5 Spring Security + JWT</h3>
+        <p>Abans d'entrar al codi, és important entendre el rol de cadascuna de les dues tecnologies que usarem:</p>
+
+        <table>
+          <thead>
+            <tr><th>Tecnologia</th><th>Rol</th><th>Analogia</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Spring Security</strong></td>
+              <td>El sistema de seguretat de l'aplicació. Decideix qui pot entrar i a quins llocs pot accedir.</td>
+              <td>El porter d'un edifici.</td>
+            </tr>
+            <tr>
+              <td><strong>JWT</strong></td>
+              <td>El format del "carnet d'identitat" digital que rep l'usuari quan fa login.</td>
+              <td>El carnet que el porter comprova a cada visita.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Com treballen junts (conceptualment)</h4>
+        <ol>
+          <li>L'usuari prèviament s'ha hagut de <strong>registrar</strong></li>
+          <li>L'usuari fa <strong>login</strong> amb nom d'usuari i contrasenya.</li>
+          <li>Si les credencials són correctes, el servidor genera un <strong>token JWT</strong> i el retorna al client.</li>
+          <li>A partir d'aquell moment, el client envia el token a <strong>cada petició</strong>.</li>
+          <li><strong>Spring Security</strong> intercepta les peticions, comprova el token i decideix si deixa passar o no.</li>
+        </ol>
+
+        <div class="box box-tip">
+          <p><strong>Clau:</strong> Spring Security és el sistema que <em>protegeix</em> l'aplicació. JWT és el <em>mecanisme</em> que fem servir per identificar l'usuari de manera segura sense sessions. Cadascun té el seu rol i treballen junts.</p>
+        </div>
+        <div class="box box-tip">
+          <p><strong>Important:</strong> El registre i el login son endpoints que han de ser públics (no necessiten token) ja que son necessaris per poder obtenir el token.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       BLOC 2 — SPRING SECURITY (mínims)
+  ════════════════════════════════════════════════════ -->
+  <section class="bloc" id="bloc2">
+    <div class="bloc-header">
+      <div class="num">2</div>
+      <div>
+        <h2>Spring Security — Coneixements mínims</h2>
+        <p>Com funciona Spring Security amb usuaris a la base de dades</p>
+      </div>
+    </div>
+    <div class="bloc-body">
+
+      <!-- 2.1 -->
+      <div class="seccio">
+        <h3>2.1 La cadena de filtres (Filter Chain)</h3>
+        <p>Spring Security funciona com una <strong>cadena de filtres</strong>. Cada petició HTTP que arriba al servidor passa per una sèrie de filtres <em>abans</em> d'arribar al controlador.</p>
+
+        <div class="flux">
+          <div class="step"><div class="step-num">→</div><span> Petició HTTP - Arriba a l'APIRest una petició json amb un token</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">F1</div><span> JWT → valida el token (Identifica l'usuari)</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">F2</div><span> (Spring Security) UsernamePasswordAuthenticationFilter  → login clàssic que amb JWT no fa res ja que ho autentica el JWT</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">F3</div><span> (Spring Security) AuthorizationFilter → comprova permisos de l'usuari (què pot fer)</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">→</div><span> (Spring APIRest) Controlador rep la petició</span></div>
+        </div>
+
+      </div>
+
+      <hr />
+
+      <!-- 2.2 -->
+      <div class="seccio">
+        <h3>2.2 Els usuaris a la base de dades</h3>
+        <p>Per poder autenticar usuaris, Spring Security necessita buscar-los en algun lloc ja que no sap on es guarden (pot ser en BBDD, memòria, LDAP...). 
+          <br>En el cas d'aquest document s'enfoca en l'opció de guardar-ho en una <strong>base de dades</strong>.</p>
+              
+        <p>És per això que necessitarem definir una entitat <strong>User</strong> i haurem d'utilitzar un <strong>Repository</strong>. És important que tingui el mètode findByUsername() ja que Spring Security l'ha d'utilitzar.</p>
+
+        <pre>// UserRepository.java
+public interface UserRepository extends JpaRepository&lt;User, Long&gt; {
+    Optional&lt;User&gt; findByUsername(String username);   // SELECT ... WHERE username = ?
+}</pre>
+
+        <div class="box box-info">
+          <p><strong>Per què és necessari?</strong> Spring Security necessita el mètode <code>findByUsername()</code> per buscar l'usuari quan algú intenta fer login. Sense el repository, no es pot connectar la seguretat amb la base de dades.</p>
+        </div>
+
+        <h4>Com s'utilitza el Repository en cada pas?</h4>
+
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">1. En el Registre — Crear l'usuari</span>
+            <span class="tag tag-green">.save()</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Aquí el <code>UserRepository</code> serveix per <strong>persistir la informació per primera vegada</strong>.</p>
+            <ul>
+              <li><strong>L'acció:</strong> L'usuari envia les dades (username, email, password).</li>
+              <li><strong>El Repository:</strong> Fem servir el mètode <code>.save(nouUsuari)</code> per desar-lo a la BBDD.</li>
+              <li><strong>Seguretat:</strong> Abans de fer el <code>save</code>, hem de passar el password pel <code>PasswordEncoder</code> (BCrypt) perquè a la BBDD <strong>mai hi hagi contrasenyes llegibles</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">2. En el Login — Validar l'usuari</span>
+            <span class="tag tag-green">.findByUsername()</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Aquí és on el mètode <code>findByUsername()</code> es converteix en l'estrella.</p>
+            <ul>
+              <li><strong>L'acció:</strong> Spring Security rep un intent de login amb el nom <code>"joan12"</code>.</li>
+              <li><strong>El Repository:</strong> Spring (o nosaltres manualment) crida a <code>findByUsername("joan12")</code>.
+                <ul style="margin-top:6px">
+                  <li>Si <strong>no existeix</strong>: Retorna un error (<code>401 Unauthorized</code>).</li>
+                  <li>Si <strong>existeix</strong>: Recupera l'objecte <code>User</code> sencer (amb la seva contrasenya encriptada i els seus rols).</li>
+                </ul>
+              </li>
+              <li><strong>La comparació:</strong> Spring compara la contrasenya que ha enviat l'usuari amb la que el Repository ha tret de la BBDD.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <hr />
+
+      <!-- 2.3 -->
+      <div class="seccio">
+        <h3>2.3 UserDetails i UserDetailsService</h3>
+        
+        <h4>UserDetails — qui és l'usuari</h4>
+        <p>És una interfície de Spring Security. El nostre <code>User.java</code> la implementa per dir-li a Spring Security quines dades té l'usuari:</p>
+        <pre>public class User implements UserDetails {
+    // ...
+    @Override
+    public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+    @Override
+    public String getPassword() { return password; }
+    @Override
+    public String getUsername() { return username; }
+}</pre>
+
+        <h4>UserDetailsService — on buscar l'usuari</h4>
+        <p>Li diem a Spring Security que busqui l'usuari a la BBDD pel nom d'usuari. Si no el troba, llança una excepció:</p>
+        <pre>// ApplicationConfig.java
+@Bean
+public UserDetailsService userDetailsService() {
+    return username -> userRepository.findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("Usuari no trobat"));
+}</pre>
+
+        <div class="box box-warning">
+          <p><strong>Important:</strong> Spring Security necessita que en el repositori hi hagi el mètode <code>loadUserByUsername()</code> ja que el crida automàticament quan algú intenta fer login o quan el nostre <code>JwtFilter</code> necessita carregar l'usuari a partir del token.</p>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 2.4 -->
+      <div class="seccio">
+        <h3>2.4 Contrasenyes: BCrypt</h3>
+        <p>Les contrasenyes <strong>mai</strong> es guarden en text pla a la base de dades. S'utilitza un algorisme de hash unidireccional anomenat <strong>BCrypt</strong>:</p>
+
+        <table>
+          <thead><tr><th>Contrasenya real</th><th>El que es guarda a BBDD</th></tr></thead>
+          <tbody>
+            <tr><td><code>1234</code></td><td><code>$2a$10$abc123xyz456...</code> (60 caràcters)</td></tr>
+          </tbody>
+        </table>
+
+        <ul>
+          <li>El hash <strong>no es pot revertir</strong>: no es pot obtenir <code>1234</code> a partir del hash.</li>
+          <li>Quan l'usuari fa login, Spring Security fa el hash de la contrasenya introduïda i la <em>compara</em> amb el hash guardat.</li>
+          <li>A <code>ApplicationConfig.java</code> tenim el bean <code>PasswordEncoder</code> que s'usa a tot el projecte.</li>
+        </ul>
+
+        <pre>// ApplicationConfig.java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}</pre>
+
+        <pre>// AuthService.java — en crear un usuari nou
+.password(passwordEncoder.encode(request.getPassword()))</pre>
+      </div>
+
+      <hr />
+
+      <!-- 2.5 -->
+      <div class="seccio">
+        <h3>2.5 Autorització per rols</h3>
+        <p>Un cop l'usuari s'ha identificat, Spring Security pot controlar a quines parts de l'aplicació pot accedir segons el seu <strong>rol</strong>.</p>
+
+        <p>Al nostre projecte hi ha dos rols definits a <code>Role.java</code>:</p>
+        <pre>public enum Role {
+    USER,
+    ADMIN
+}</pre>
+
+        <p>Hi ha dues maneres de definir l'autorització:</p>
+
+        <h4>1 — A la configuració general (SecurityConfig)</h4>
+        <pre>// SecurityConfig.java
+.authorizeHttpRequests(auth -> auth
+    .requestMatchers("/api/auth/**").permitAll()   // públic, sense login
+    .anyRequest().authenticated()                  // la resta necessita token
+)</pre>
+
+        <h4>2 — Directament als controladors (@PreAuthorize)</h4>
+        <pre>// UserController.java
+@PreAuthorize("hasRole('ADMIN')")
+@GetMapping("/admin")
+public ResponseEntity&lt;String&gt; adminEndpoint() {
+    return ResponseEntity.ok("Només per a administradors");
+}</pre>
+
+        <div class="box box-info">
+          <p><strong>Diferència:</strong> La configuració general és per a rutes senceres. <code>@PreAuthorize</code> és per a mètodes concrets dins d'un controlador. Els dos mètodes es poden combinar.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       BLOC 3 — API REST AMB JWT
+  ════════════════════════════════════════════════════ -->
+  <section class="bloc" id="bloc3">
+    <div class="bloc-header">
+      <div class="num">4</div>
+      <div>
+        <h2>Codi del projecte — Explicació i ordre d'implementació</h2>
+        <p>Estructura de carpetes, fitxers i ordre recomanat per implementar-lo</p>
+      </div>
+    </div>
+    <div class="bloc-body">
+
+      <!-- 4.1 Estructura -->
+      <div class="seccio">
+        <h3>4.1 Estructura del projecte</h3>
+        <p>El projecte segueix l'arquitectura en capes típica de Spring Boot:</p>
+        <pre>src/main/java/ra5/demo/jwt/ra5_demo_jwt/
+│
+├── config/
+│   ├── ApplicationConfig.java    ← beans de Spring Security
+│   └── SecurityConfig.java       ← regles de seguretat i filtres
+│
+├── controller/
+│   ├── AuthController.java       ← endpoints públics (login, registre)
+│   └── UserController.java       ← endpoints protegits
+│
+├── dto/
+│   ├── AuthResponse.java         ← resposta amb el token
+│   ├── LoginRequest.java         ← dades de login
+│   ├── RegisterRequest.java      ← dades de registre
+│   └── UserDTO.java              ← dades de l'usuari (sense contrasenya)
+│
+├── model/
+│   ├── Role.java                 ← enum: USER, ADMIN
+│   └── User.java                 ← entitat BBDD + UserDetails
+│
+├── repository/
+│   └── UserRepository.java       ← accés a BBDD
+│
+├── security/
+│   └── JwtFilter.java            ← filtre que valida el token
+│
+└── service/
+    ├── AuthService.java          ← lògica de registre i login
+    └── JwtService.java           ← generació i validació de JWT</pre>
+      </div>
+
+      <hr />
+
+      <!-- 4.2 Implementació pas a pas -->
+      <div class="seccio">
+        <h3>4.2 Implementació pas a pas</h3>
+        <p>Segueix aquest ordre per evitar errors de dependències. Cada fitxer depèn dels anteriors.</p>
+
+        <!-- PAS 1: Role.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">model/Role.java</span>
+            <span class="tag tag-green">Pas 1</span>
+            <span class="tag">Enum</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Punt de partida. Defineix els dos rols possibles. No té cap dependència.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.model;
+
+public enum Role {
+    USER,
+    ADMIN
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 2: User.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">model/User.java</span>
+            <span class="tag tag-green">Pas 2</span>
+            <span class="tag">@Entity</span>
+            <span class="tag">implements UserDetails</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Fa dues coses alhora: és l'entitat JPA que es mapeja a la taula <code>users</code> de MySQL, i implementa <code>UserDetails</code> perquè Spring Security pugui treballar amb ella.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.model;
+
+import java.util.Collection;
+import java.util.List;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.*;
+
+@Entity @Table(name = "users")
+public class User implements UserDetails {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @Column(nullable = false)
+    private String password; // sempre guardat com a hash BCrypt
+
+    @Enumerated(EnumType.STRING) // guarda "USER" o "ADMIN", no 0/1
+    private Role role;
+
+    public User() {}
+
+    public User(Long id, String username, String email, String password, Role role) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
+
+    // Getters i setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPassword(String password) { this.password = password; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+
+    // Mètodes obligatoris de UserDetails:
+    @Override
+    public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() { return password; }
+
+    @Override
+    public String getUsername() { return username; }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 3: UserRepository.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">repository/UserRepository.java</span>
+            <span class="tag tag-green">Pas 3</span>
+            <span class="tag">JpaRepository</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Permet accedir a la taula d'usuaris sense escriure SQL. Spring Data JPA genera les consultes automàticament a partir del nom dels mètodes.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.repository;
+
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import ra5.demo.jwt.ra5_demo_jwt.model.User;
+
+@Repository
+public interface UserRepository extends JpaRepository&lt;User, Long&gt; {
+    Optional&lt;User&gt; findByUsername(String username);
+    boolean existsByUsername(String username);
+    boolean existsByEmail(String email);
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 4: DTOs -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">dto/ — AuthResponse, LoginRequest, RegisterRequest, UserDTO</span>
+            <span class="tag tag-green">Pas 4</span>
+            <span class="tag">DTOs</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Objectes per rebre dades del client i enviar-li respostes. Eviten exposar l'entitat <code>User</code> directament (que conté la contrasenya).</p>
+            <pre>// AuthResponse.java — resposta que retornem al client (conté el token)
+public class AuthResponse {
+    private String token;
+    public AuthResponse(String token) { this.token = token; }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
+}</pre>
+            <pre>// LoginRequest.java — dades que rep el login
+public class LoginRequest {
+    private String username;
+    private String password;
+    public LoginRequest(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}</pre>
+            <pre>// RegisterRequest.java — dades que rep el registre
+public class RegisterRequest {
+    private String username;
+    private String email;
+    private String password;
+    public RegisterRequest(String username, String email, String password) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}</pre>
+            <pre>// UserDTO.java — dades de l'usuari que retornem (sense contrasenya)
+public class UserDTO {
+    private String username;
+    private String email;
+    private Role role;
+    public UserDTO() {}
+    public UserDTO(String username, String email, Role role) {
+        this.username = username;
+        this.email = email;
+        this.role = role;
+    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 5: JwtService.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">service/JwtService.java</span>
+            <span class="tag tag-green">Pas 5</span>
+            <span class="tag">@Service</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Gestiona tota la lògica relacionada amb el token JWT: generar-lo, validar-lo i extreure'n dades. Llegeix la clau secreta i l'expiració de <code>application.properties</code>.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.service;
+
+import java.util.Date;
+import java.util.function.Function;
+import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+
+@Service
+public class JwtService {
+
+    @Value("${jwt.secret}") private String secretKey;
+    @Value("${jwt.expiration}") private long jwtExpiration;
+
+    /** Extreu el username (subject) del token */
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    /** Genera un token JWT per a l'usuari */
+    public String generateToken(UserDetails userDetails) {
+        return Jwts.builder()
+            .subject(userDetails.getUsername())
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+            .signWith(getSigningKey())
+            .compact();
+    }
+
+    /** Retorna true si el token és vàlid i no ha caducat */
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) &amp;&amp; !isTokenExpired(token);
+    }
+
+    public &lt;T&gt; T extractClaim(String token, Function&lt;Claims, T&gt; claimsResolver) {
+        Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractClaim(token, Claims::getExpiration).before(new Date());
+    }
+
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 6: ApplicationConfig.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">config/ApplicationConfig.java</span>
+            <span class="tag tag-green">Pas 6</span>
+            <span class="tag">@Configuration</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Proporciona a Spring els <em>beans</em> d'infraestructura que necessita per gestionar l'autenticació: com carregar usuaris, com encriptar contrasenyes i com verificar credencials.</p>
+            <h4>Què és un bean?</h4>
+            <p>Un <strong>bean</strong> és un objecte que Spring crea, configura i gestiona automàticament. En lloc de fer <code>new MevaClasse()</code> manualment, li diem a Spring que el creï ell amb <code>@Bean</code> i el tingui disponible per injectar allà on faci falta amb <code>@Autowired</code>.</p>
+            <div class="box box-info">
+              <p><strong>Analogia:</strong> Imagina Spring com un magatzem. Els <em>beans</em> són les eines del magatzem. Quan una classe necessita una eina, no la compra ella mateixa — li demana al magatzem i Spring li proporciona la que ja té creada.</p>
+            </div>
+            <p>Aquest fitxer proporciona els beans d'infraestructura que Spring Security necessita per gestionar l'autenticació:</p>
+            <ul>
+              <li><code>userDetailsService()</code> → li explica a Spring on trobar els usuaris (a MySQL).</li>
+              <li><code>passwordEncoder()</code> → proporciona BCrypt per encriptar i comparar contrasenyes.</li>
+              <li><code>authenticationProvider()</code> → combina els dos anteriors per verificar credencials.</li>
+            </ul>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import ra5.demo.jwt.ra5_demo_jwt.repository.UserRepository;
+
+@Configuration
+public class ApplicationConfig {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    /** Com carregar un usuari per username (busca a MySQL) */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("Usuari no trobat"));
+    }
+
+    /** BCrypt per encriptar contrasenyes */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /** Gestiona el procés d'autenticació (carrega user + compara password) */
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService());
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 7: AuthService.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">service/AuthService.java</span>
+            <span class="tag tag-green">Pas 7</span>
+            <span class="tag">@Service</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Conté la lògica de negoci per al registre i el login. Coordina el repositori, el <code>PasswordEncoder</code>, el <code>JwtService</code> i l'<code>AuthenticationManager</code>.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import ra5.demo.jwt.ra5_demo_jwt.dto.*;
+import ra5.demo.jwt.ra5_demo_jwt.model.Role;
+import ra5.demo.jwt.ra5_demo_jwt.model.User;
+import ra5.demo.jwt.ra5_demo_jwt.repository.UserRepository;
+
+@Service
+public class AuthService {
+
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JwtService jwtService;
+    @Autowired private AuthenticationManager authenticationManager;
+
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            return new AuthResponse("No es pot registrar l'usuari");
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
+
+        userRepository.save(user);
+        return new AuthResponse(jwtService.generateToken(user));
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.getUsername(),
+                    request.getPassword()
+                )
+            );
+        } catch (AuthenticationException e) {
+            return new AuthResponse("Credencials incorrectes");
+        }
+
+        User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+        return new AuthResponse(jwtService.generateToken(user));
+    }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 8: JwtFilter.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">security/JwtFilter.java</span>
+            <span class="tag tag-green">Pas 8</span>
+            <span class="tag">OncePerRequestFilter</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>S'executa una vegada per cada petició HTTP. Extreu el token JWT de la capçalera, el valida i si és correcte informa Spring Security de qui és l'usuari. <strong>No bloqueja res</strong>: qui decideix bloquejar o deixar passar és <code>SecurityConfig</code>.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.security;
+
+import java.io.IOException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import ra5.demo.jwt.ra5_demo_jwt.service.JwtService;
+
+@Component
+public class JwtFilter extends OncePerRequestFilter {
+
+    @Autowired private JwtService jwtService;
+    @Autowired private UserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res,
+            FilterChain chain) throws IOException, ServletException {
+
+        // 1. Agafar la capçalera Authorization
+        String authHeader = req.getHeader("Authorization");
+
+        // 2. Si no hi ha token Bearer, deixem passar sense autenticació
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        // 3. Extreure el token (elimina el prefix "Bearer ")
+        String jwt = authHeader.substring(7);
+
+        // 4. Extreure el username del token
+        String username = jwtService.extractUsername(jwt);
+
+        // 5. Validar i autenticar (si no ho estava ja)
+        if (username != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            if (jwtService.isTokenValid(jwt, userDetails)) {
+                var authToken = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities()
+                );
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
+        chain.doFilter(req, res);
+    }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 9: SecurityConfig.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">config/SecurityConfig.java</span>
+            <span class="tag tag-green">Pas 9</span>
+            <span class="tag">@Configuration</span>
+            <span class="tag">@EnableMethodSecurity</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>El fitxer central de seguretat. Defineix quines rutes són públiques, quines necessiten token, desactiva les sessions i afegeix el <code>JwtFilter</code> a la cadena.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import ra5.demo.jwt.ra5_demo_jwt.security.JwtFilter;
+
+@EnableMethodSecurity
+@Configuration
+public class SecurityConfig {
+
+    @Autowired private JwtFilter jwtFilter;
+    @Autowired private AuthenticationProvider authenticationProvider;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // Desactiva CSRF: amb JWT no hi ha sessions ni cookies
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()  // login i registre: públics
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .anyRequest().authenticated()                 // la resta necessita token
+            )
+            // No es creen sessions: cada petició s'identifica amb el token
+            .sessionManagement(s -> s
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authenticationProvider(authenticationProvider)
+            // El nostre JwtFilter s'executa ABANS del filtre estàndard de Spring
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg)
+            throws Exception {
+        return cfg.getAuthenticationManager();
+    }
+}</pre>
+          </div>
+        </div>
+
+        <!-- PAS 10: AuthController.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">controller/AuthController.java</span>
+            <span class="tag tag-green">Pas 10</span>
+            <span class="tag">@RestController</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Endpoints públics per a l'autenticació. Accessibles sense token (definit a <code>SecurityConfig</code> com a <code>permitAll</code>).</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import ra5.demo.jwt.ra5_demo_jwt.dto.AuthResponse;
+import ra5.demo.jwt.ra5_demo_jwt.dto.LoginRequest;
+import ra5.demo.jwt.ra5_demo_jwt.dto.RegisterRequest;
+import ra5.demo.jwt.ra5_demo_jwt.service.AuthService;
+
+@RestController
+@RequestMapping("/api/auth/")
+public class AuthController {
+
+    @Autowired
+    private AuthService authService;
+
+    // POST /api/auth/register → registra un usuari nou, retorna token (201 Created)
+    @PostMapping("register")
+    public ResponseEntity&lt;AuthResponse&gt; register(@RequestBody RegisterRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(req));
+    }
+
+    // POST /api/auth/login → verifica credencials, retorna token (200 OK)
+    @PostMapping("login")
+    public ResponseEntity&lt;AuthResponse&gt; login(@RequestBody LoginRequest req) {
+        return ResponseEntity.ok(authService.login(req));
+    }
+}</pre>
+            <div class="box box-info">
+              <p><strong>Prova aquí primer:</strong> Un cop implementat aquest pas, ja pots provar el registre i el login amb Postman abans de continuar.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAS 11: UserController.java -->
+        <div class="fitxer-card">
+          <div class="fitxer-card-header">
+            <span class="ruta">controller/UserController.java</span>
+            <span class="tag tag-green">Pas 11</span>
+            <span class="tag">@RestController</span>
+          </div>
+          <div class="fitxer-card-body">
+            <p>Endpoints protegits que requereixen un token JWT vàlid a la capçalera <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+            <pre>package ra5.demo.jwt.ra5_demo_jwt.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import ra5.demo.jwt.ra5_demo_jwt.dto.UserDTO;
+import ra5.demo.jwt.ra5_demo_jwt.model.User;
+
+@RestController
+public class UserController {
+
+    // GET /me → retorna les dades de l'usuari autenticat
+    // @AuthenticationPrincipal injecta l'usuari que ha fet login (extret del token)
+    @GetMapping("/me")
+    public ResponseEntity&lt;UserDTO&gt; getCurrentUser(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(
+            new UserDTO(currentUser.getUsername(), currentUser.getEmail(), currentUser.getRole())
+        );
+    }
+
+    // GET /admin → només accessible per a ADMIN
+    // @PreAuthorize comprova el rol ABANS d'executar el mètode
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity&lt;String&gt; adminOnly() {
+        return ResponseEntity.ok("Accés exclusiu per a administradors!");
+    }
+}</pre>
+            <div class="box box-tip">
+              <p><strong>Possibles valors de @PreAuthorize:</strong><br/>
+              <code>hasRole('ADMIN')</code> — només ADMIN<br/>
+              <code>hasRole('USER')</code> — només USER<br/>
+              <code>hasAnyRole('ADMIN','USER')</code> — qualsevol dels dos<br/>
+              <code>isAuthenticated()</code> — qualsevol usuari autenticat</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       BLOC 4 — CODI DEL PROJECTE
+  ════════════════════════════════════════════════════ -->
+  <section class="bloc" id="bloc4">
+    <div class="bloc-header">
+      <div class="num">3</div>
+      <div>
+        <h2>API REST amb JWT — Com funciona tot el sistema</h2>
+        <p>Des que el client crida un endpoint fins que rep la resposta</p>
+      </div>
+    </div>
+    <div class="bloc-body">
+
+      <!-- 3.1 -->
+      <div class="seccio">
+        <h3>3.1 Per què una API REST usa JWT i no sessions?</h3>
+        <p>Una API REST ha de ser <strong>stateless</strong> (sense estat): cada petició és independent i el servidor no ha de recordar res entre peticions. Les sessions van en contra d'aquest principi perquè obliguen el servidor a guardar informació.</p>
+      </div>
+
+      <hr />
+
+      <!-- 3.2 -->
+      <div class="seccio">
+        <h3>3.2 Flux complet: registre d'un usuari nou</h3>
+
+        <div class="flux">
+          <div class="step"><div class="step-num">1</div><span>Client fa <code>POST /api/auth/register</code> amb <code>{ username, email, password }</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">2</div><span><strong>AuthController</strong> rep la petició i crida a <code>AuthService.register()</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">3</div><span><strong>AuthService</strong> comprova si el nom d'usuari ja existeix a BBDD</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">4</div><span>Crea el nou <code>User</code> amb la contrasenya feta hash amb BCrypt i rol <code>USER</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">5</div><span>Desa l'usuari a la BBDD via <code>UserRepository</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">6</div><span><strong>JwtService</strong> genera un token JWT amb el nom d'usuari i l'expiració (24h)</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">7</div><span>El servidor retorna <code>{ "token": "xxxxx.yyyyy.zzzzz" }</code> amb codi <code>201 Created</code></span></div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 3.3 -->
+      <div class="seccio">
+        <h3>3.3 Flux complet: login</h3>
+
+        <div class="flux">
+          <div class="step"><div class="step-num">1</div><span>Client fa <code>POST /api/auth/login</code> amb <code>{ username, password }</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">2</div><span><strong>AuthController</strong> crida a <code>AuthService.login()</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">3</div><span><strong>AuthenticationManager</strong> verifica les credencials: carrega l'usuari de BBDD, fa hash de la contrasenya i compara</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">4</div><span>Si les credencials són incorrectes → excepció → resposta <code>401 Unauthorized</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">5</div><span>Si són correctes → <strong>JwtService</strong> genera un nou token JWT</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">6</div><span>Retorna <code>{ "token": "xxxxx.yyyyy.zzzzz" }</code> amb codi <code>200 OK</code></span></div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 3.4 -->
+      <div class="seccio">
+        <h3>3.4 Flux complet: petició a un endpoint protegit</h3>
+        <p>Un cop el client té el token, l'envia a la capçalera HTTP de cada petició:</p>
+        <pre>GET /me HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FuIn0.abc123</pre>
+
+        <div class="flux">
+          <div class="step"><div class="step-num">1</div><span>La petició arriba al servidor amb la capçalera <code>Authorization: Bearer &lt;token&gt;</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">2</div><span><strong>JwtFilter</strong> intercepta la petició i extreu el token de la capçalera</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">3</div><span><strong>JwtService</strong> extreu el nom d'usuari (<em>subject</em>) del token</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">4</div><span>Carrega l'usuari de la BBDD via <code>UserDetailsService</code></span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">5</div><span>Valida el token: ¿el nom d'usuari coincideix? ¿ha expirat?</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">6</div><span>Si és vàlid → posa l'autenticació al <strong>SecurityContext</strong> (Spring Security ja sap qui és)</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">7</div><span><strong>SecurityConfig</strong> comprova si l'usuari té el rol necessari per accedir a l'endpoint</span></div>
+          <div class="arrow">↓</div>
+          <div class="step"><div class="step-num">8</div><span>Si té permís → el <strong>controlador</strong> processa la petició i retorna la resposta</span></div>
+        </div>
+
+        <div class="box box-warning">
+          <p><strong>Que passa si el token no és vàlid?</strong> El <code>JwtFilter</code> no posa res al <code>SecurityContext</code>. Spring Security veu que la petició no està autenticada i retorna <code>401 Unauthorized</code> automàticament, sense arribar al controlador.</p>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 3.5 -->
+      <div class="seccio">
+        <h3>3.5 Generació del token JWT (JwtService)</h3>
+        <p>El <code>JwtService</code> és la classe encarregada de crear i validar els tokens. Treballa amb la llibreria <strong>JJWT</strong>.</p>
+
+        <h4>Generació del token</h4>
+        <pre>public String generateToken(UserDetails userDetails) {
+    return Jwts.builder()
+        .subject(userDetails.getUsername())   // qui és l'usuari
+        .issuedAt(new Date())                 // quan s'ha creat
+        .expiration(new Date(System.currentTimeMillis() + jwtExpiration)) // quan expira
+        .signWith(getSigningKey())            // firma amb la clau secreta
+        .compact();                           // retorna el token com a String
+}</pre>
+
+        <h4>Validació del token</h4>
+        <pre>public boolean isTokenValid(String token, UserDetails userDetails) {
+    final String username = extractUsername(token);
+    return (username.equals(userDetails.getUsername())) &amp;&amp; !isTokenExpired(token);
+}</pre>
+
+        <h4>Clau secreta</h4>
+        <p>La clau secreta es defineix a <code>application.properties</code> i s'usa per signar i verificar tots els tokens:</p>
+        <pre># application.properties
+jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+jwt.expiration=86400000</pre>
+
+        <div class="box box-warning">
+          <p><strong>Important:</strong> La clau secreta no s'ha de compartir mai ni pujar a GitHub. En producció hauria d'estar en una variable d'entorn, no al fitxer de configuració.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
